@@ -1,0 +1,45 @@
+# Python virtual environment
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Node modules (backend will install its own)
+web/backend/node_modules/
+web/frontend/node_modules/
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Output files
+outputs/
+dist/
+web/frontend/dist/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files (optional - can include if small)
+# test_*.py
+# QUICK_TEST.md
+
+# Documentation (optional - can exclude if large)
+# Keep PLAN.md and timeline.md as they're not too large
+
+# Git files
+.git/
+.gitignore
+

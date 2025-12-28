@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: analyst-backend
+    runtime: node
+    plan: free  # Change to 'starter' for $7/month (always-on)
+    buildCommand: pip install -r "MultiAgent Financial analyst/requirements.txt" && cd "MultiAgent Financial analyst" && npm install && npm run build
+    startCommand: cd "MultiAgent Financial analyst" && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Note: Set these in Render Dashboard → Environment (don't commit API keys):
+      # GEMINI_API_KEY=your_key_here
+      # HUGGINGFACE_API_KEY=your_key_here
+      # FRED_API_KEY=your_key_here (optional)
+

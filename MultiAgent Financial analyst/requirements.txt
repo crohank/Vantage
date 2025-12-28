@@ -1,0 +1,14 @@
+langgraph>=0.2.0
+langchain>=0.3.0
+# langchain-ollama>=0.1.0  # Removed - using Gemini + Hugging Face instead
+# Using REST API directly - no package needed, just requests
+requests>=2.31.0  # For Gemini REST API
+huggingface_hub>=0.20.0
+yfinance>=0.2.0
+pandas>=2.0.0
+numpy>=1.24.0
+scipy>=1.10.0
+# pandas-ta  # Optional - install manually if needed: pip install pandas-ta
+fredapi>=0.5.0
+python-dotenv>=1.0.0
+
