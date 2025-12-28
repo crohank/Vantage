@@ -209,7 +209,7 @@ router.post('/analyze/stream', async (req: Request<{}, void, AnalyzeRequest>, re
     });
     
     // Also check for errors
-    res.on('error', (error) => {
+    res.on('error', (error: Error) => {
       console.error('[API] Response error:', error);
       connectionAlive = false;
       responseEnded = true;

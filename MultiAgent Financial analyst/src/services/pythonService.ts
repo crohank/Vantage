@@ -130,7 +130,7 @@ export function runAnalysis(
       stdout += chunk;
       
       // Split by newlines and process each line
-      const lines = chunk.split('\n').filter(line => line.trim());
+      const lines = chunk.split('\n').filter((line: string) => line.trim());
       
       for (const line of lines) {
         // Call progress callback if provided
