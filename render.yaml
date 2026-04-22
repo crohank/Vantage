@@ -10,6 +10,8 @@ services:
         value: production
       - key: FASTEMBED_CACHE_PATH
         value: /opt/render/project/src/.fastembed_cache
+      - key: PYTHON_VERSION
+        value: 3.12.7
       # Set the following in the Render dashboard → Environment tab:
       # MONGODB_URI        → your Atlas connection string
       # GEMINI_API_KEY     → your Gemini API key
