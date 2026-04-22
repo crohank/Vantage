@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # Node.js API Backend (includes Python)
+  nodejs-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.backend
+    container_name: analyst-nodejs-api
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
+      - FRED_API_KEY=${FRED_API_KEY}
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+    volumes:
+      - ./backend/outputs:/app/outputs
+    networks:
+      - analyst-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # React Frontend
+  react-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:3001
+    container_name: analyst-react-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      nodejs-api:
+        condition: service_healthy
+    networks:
+      - analyst-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+networks:
+  analyst-network:
+    driver: bridge
+
+volumes:
+  outputs:
+    driver: local
+

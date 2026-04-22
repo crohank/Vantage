@@ -1,0 +1,43 @@
+name: memo_writer
+version: 1
+model_target: gemini-2.5-flash
+temperature: 0.3
+description: "Generates professional investment memo in Markdown format"
+variables:
+  - ticker
+  - horizon
+  - risk_profile
+  - recommendation
+  - confidence
+  - price_trend
+  - pe_ratio
+  - interest_rate_trend
+  - market_trend
+  - volatility
+  - beta
+  - bull_return
+  - bull_prob
+  - base_return
+  - base_prob
+  - bear_return
+  - bear_prob
+template: |
+  Write investment memo for {ticker} ({horizon} term, {risk_profile} risk):
+
+  Key Data:
+  - Recommendation: {recommendation} (Confidence: {confidence})
+  - Price Trend: {price_trend}, P/E: {pe_ratio}
+  - Macro: {interest_rate_trend} rates, {market_trend} market
+  - Risk: Vol {volatility}, Beta {beta}
+  - Scenarios: Bull {bull_return} ({bull_prob}), Base {base_return} ({base_prob}), Bear {bear_return} ({bear_prob})
+
+  Format: Markdown with sections:
+  1. Executive Summary
+  2. Thesis
+  3. Supporting Data
+  4. Risks
+  5. Scenarios
+  6. Recommendation
+  7. Disclaimer
+
+  Tone: Professional, no hype language

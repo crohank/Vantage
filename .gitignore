@@ -38,8 +38,19 @@ ENV/
 *~
 
 # Outputs
-outputs/*.md
-!outputs/.gitkeep
+backend/outputs/*.md
+
+# ChromaDB / RAG data
+backend/data/
+
+# Telemetry DB
+backend/telemetry.db
+
+# Eval results
+backend/eval/results/*.csv
+
+# Cache artifacts
+.llm_warmed_up
 
 # OS
 .DS_Store

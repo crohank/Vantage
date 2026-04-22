@@ -1,4 +1,4 @@
-# AI-Powered Financial Research Analyst Team
+# Vantage
 
 A multi-agent AI system built with LangGraph that generates structured investment research reports with risk modeling and scenario analysis. The system features a full-stack web application with real-time progress tracking and a Python backend orchestrating specialized AI agents.
 
@@ -72,57 +72,65 @@ The system uses a multi-agent architecture where specialized agents collaborate 
 ```
 analyst/
 │
-├── agents/                          # AI Agent Implementations
-│   ├── market_data_agent.py        # Fetches and processes market data
-│   ├── macro_trends_agent.py       # Analyzes macroeconomic conditions
-│   ├── risk_agent.py               # Computes risk metrics and identifies risks
-│   ├── scenario_agent.py           # Generates Bull/Base/Bear scenarios
-│   └── memo_writer_agent.py        # Generates final investment memo
+├── frontend/                      # React Web Frontend
+│   ├── src/
+│   │   ├── App.tsx                # Main application component
+│   │   ├── components/            # React components
+│   │   │   ├── TickerInput.tsx
+│   │   │   ├── HorizonSelect.tsx
+│   │   │   ├── RiskProfileSelect.tsx
+│   │   │   ├── ProgressDisplay.tsx
+│   │   │   ├── ResultsDisplay.tsx
+│   │   │   ├── ScenarioCard.tsx
+│   │   │   └── MemoViewer.tsx
+│   │   └── services/
+│   │       └── api.ts             # API client with SSE support
+│   ├── Dockerfile
+│   ├── nginx.conf
+│   └── package.json
 │
-├── graph/                          # LangGraph Orchestration
-│   └── research_graph.py           # Defines agent workflow and state machine
+├── backend/                       # Python Agents + Express API
+│   ├── agents/                    # AI Agent Implementations
+│   │   ├── market_data_agent.py
+│   │   ├── macro_trends_agent.py
+│   │   ├── risk_agent.py
+│   │   ├── scenario_agent.py
+│   │   └── memo_writer_agent.py
+│   ├── graph/                     # LangGraph Orchestration
+│   │   └── research_graph.py
+│   ├── tools/                     # Data Fetching & Processing
+│   │   ├── market_data.py
+│   │   ├── macro_data.py
+│   │   ├── risk_metrics.py
+│   │   └── sentiment.py
+│   ├── schemas/                   # Type Definitions
+│   │   └── state.py
+│   ├── src/                       # Express API Server (Node.js)
+│   │   ├── server.ts
+│   │   ├── routes/analysis.ts
+│   │   └── services/pythonService.ts
+│   ├── outputs/                   # Generated Investment Memos
+│   │   └── {TICKER}_memo.md
+│   ├── config.py
+│   ├── main.py
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   ├── Dockerfile.backend
+│   └── package.json
 │
-├── tools/                          # Data Fetching & Processing Tools
-│   ├── market_data.py              # yfinance integration, technical indicators
-│   ├── macro_data.py               # FRED API integration, sector analysis
-│   ├── risk_metrics.py             # Volatility, beta, drawdown calculations
-│   └── sentiment.py                # LLM-based sentiment analysis
+├── docs/                          # Documentation & Learning Guides
+│   ├── DEPLOYMENT.md
+│   ├── USE.md
+│   └── ...
 │
-├── schemas/                        # Type Definitions
-│   └── state.py                    # ResearchState TypedDict schema
+├── tests/                         # Test Scripts
+│   ├── test_components.py
+│   └── test_gemini_api.py
 │
-├── outputs/                        # Generated Investment Memos
-│   ├── {TICKER}_memo.md           # Investment memos saved here
-│
-├── web/                           # Web Application
-│   ├── frontend/                  # React Frontend
-│   │   ├── src/
-│   │   │   ├── App.tsx            # Main application component
-│   │   │   ├── components/        # React components
-│   │   │   │   ├── TickerInput.tsx
-│   │   │   │   ├── HorizonSelect.tsx
-│   │   │   │   ├── RiskProfileSelect.tsx
-│   │   │   │   ├── ProgressDisplay.tsx
-│   │   │   │   ├── ResultsDisplay.tsx
-│   │   │   │   ├── ScenarioCard.tsx
-│   │   │   │   └── MemoViewer.tsx
-│   │   │   └── services/
-│   │   │       └── api.ts         # API client with SSE support
-│   │   └── package.json
-│   │
-│   └── backend/                   # Express API Server
-│       ├── src/
-│       │   ├── server.ts          # Express server setup
-│       │   ├── routes/
-│       │   │   └── analysis.ts    # Analysis endpoints
-│       │   └── services/
-│       │       └── pythonService.ts  # Python subprocess management
-│       └── package.json
-│
-├── config.py                      # LLM configuration and initialization
-├── main.py                        # CLI entry point with timing and warmup logic
-├── requirements.txt               # Python dependencies
-└── README.md                      # This file
+├── docker-compose.yml
+├── render.yaml
+├── .env.example
+└── README.md
 ```
 
 ## 🤖 Agent Architecture & Responsibilities
@@ -254,11 +262,11 @@ End
 
 6. **Set up Web Application (Optional)**
    ```bash
-   # Backend
-   cd web/backend
+   # Backend (Node.js API)
+   cd backend
    npm install
    
-   # Frontend
+   # Frontend (React)
    cd ../frontend
    npm install
    ```
@@ -285,14 +293,14 @@ python main.py AAPL medium moderate
 
 1. **Start the backend server**
    ```bash
-   cd web/backend
+   cd backend
    npm run dev
    # Server runs on http://localhost:3001
    ```
 
 2. **Start the frontend development server**
    ```bash
-   cd web/frontend
+   cd frontend
    npm run dev
    # Application runs on http://localhost:5173
    ```

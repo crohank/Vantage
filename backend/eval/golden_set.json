@@ -1,0 +1,422 @@
+[
+  {
+    "id": 1,
+    "ticker": "AAPL",
+    "horizon": "medium",
+    "risk_profile": "moderate",
+    "agent": "risk_analysis",
+    "input_context": {
+      "price_trend": "Upward (6M)",
+      "pe_ratio": 28.5,
+      "rsi": 62,
+      "interest_rate_trend": "Stable",
+      "inflation_trend": "Cooling",
+      "market_trend": "Positive",
+      "volatility": 0.24,
+      "beta": 1.18,
+      "drawdown": "Medium"
+    },
+    "expected_output_contains": ["valuation", "concentration", "regulatory"],
+    "expected_sentiment": "cautiously_optimistic",
+    "human_score": 4
+  },
+  {
+    "id": 2,
+    "ticker": "TSLA",
+    "horizon": "short",
+    "risk_profile": "aggressive",
+    "agent": "risk_analysis",
+    "input_context": {
+      "price_trend": "Downward (6M)",
+      "pe_ratio": 65.2,
+      "rsi": 38,
+      "interest_rate_trend": "Rising",
+      "inflation_trend": "Elevated",
+      "market_trend": "Negative",
+      "volatility": 0.58,
+      "beta": 1.95,
+      "drawdown": "High"
+    },
+    "expected_output_contains": ["volatility", "valuation", "competition"],
+    "expected_sentiment": "bearish",
+    "human_score": 4
+  },
+  {
+    "id": 3,
+    "ticker": "MSFT",
+    "horizon": "long",
+    "risk_profile": "conservative",
+    "agent": "scenario_generation",
+    "input_context": {
+      "price_trend": "Upward (6M)",
+      "pe_ratio": 34.1,
+      "rsi": 55,
+      "interest_rate_trend": "Stable",
+      "inflation_trend": "Moderate",
+      "market_trend": "Positive",
+      "volatility": 0.22,
+      "beta": 0.95,
+      "key_risks": "AI investment returns, cloud competition, regulatory scrutiny"
+    },
+    "expected_output_contains": ["bull", "base", "bear", "prob"],
+    "expected_sentiment": "balanced",
+    "human_score": 4
+  },
+  {
+    "id": 4,
+    "ticker": "NVDA",
+    "horizon": "medium",
+    "risk_profile": "aggressive",
+    "agent": "risk_analysis",
+    "input_context": {
+      "price_trend": "Upward (6M)",
+      "pe_ratio": 55.0,
+      "rsi": 72,
+      "interest_rate_trend": "Stable",
+      "inflation_trend": "Moderate",
+      "market_trend": "Strong",
+      "volatility": 0.48,
+      "beta": 1.72,
+      "drawdown": "High"
+    },
+    "expected_output_contains": ["AI demand", "concentration", "valuation"],
+    "expected_sentiment": "cautious",
+    "human_score": 4
+  },
+  {
+    "id": 5,
+    "ticker": "JPM",
+    "horizon": "medium",
+    "risk_profile": "moderate",
+    "agent": "risk_analysis",
+    "input_context": {
+      "price_trend": "Sideways (6M)",
+      "pe_ratio": 11.2,
+      "rsi": 50,
+      "interest_rate_trend": "Falling",
+      "inflation_trend": "Cooling",
+      "market_trend": "Positive",
+      "volatility": 0.20,
+      "beta": 1.05,
+      "drawdown": "Low"
+    },
+    "expected_output_contains": ["interest rate", "credit", "regulatory"],
+    "expected_sentiment": "neutral",
+    "human_score": 3
+  },
+  {
+    "id": 6,
+    "ticker": "AMZN",
+    "horizon": "long",
+    "risk_profile": "moderate",
+    "agent": "scenario_generation",
+    "input_context": {
+      "price_trend": "Upward (6M)",
+      "pe_ratio": 42.0,
+      "rsi": 58,
+      "interest_rate_trend": "Stable",
+      "inflation_trend": "Moderate",
+      "market_trend": "Positive",
+      "volatility": 0.30,
+      "beta": 1.15,
+      "key_risks": "AWS competition, antitrust, margin pressure"
+    },
+    "expected_output_contains": ["bull", "base", "bear"],
+    "expected_sentiment": "optimistic",
+    "human_score": 4
+  },
+  {
+    "id": 7,
+    "ticker": "META",
+    "horizon": "medium",
+    "risk_profile": "moderate",
+    "agent": "risk_analysis",
+    "input_context": {
+      "price_trend": "Upward (6M)",
+      "pe_ratio": 22.5,
+      "rsi": 60,
+      "interest_rate_trend": "Stable",
+      "inflation_trend": "Moderate",
+      "market_trend": "Positive",
+      "volatility": 0.35,
+      "beta": 1.30,
+      "drawdown": "Medium"
+    },
+    "expected_output_contains": ["advertising", "regulatory", "metaverse"],
+    "expected_sentiment": "cautiously_optimistic",
+    "human_score": 4
+  },
+  {
+    "id": 8,
+    "ticker": "XOM",
+    "horizon": "short",
+    "risk_profile": "conservative",
+    "agent": "risk_analysis",
+    "input_context": {
+      "price_trend": "Downward (6M)",
+      "pe_ratio": 12.0,
+      "rsi": 42,
+      "interest_rate_trend": "Falling",
+      "inflation_trend": "Cooling",
+      "market_trend": "Weak",
+      "volatility": 0.25,
+      "beta": 0.85,
+      "drawdown": "Low"
+    },
+    "expected_output_contains": ["oil price", "energy transition", "demand"],
+    "expected_sentiment": "cautious",
+    "human_score": 3
+  },
+  {
+    "id": 9,
+    "ticker": "GOOGL",
+    "horizon": "medium",
+    "risk_profile": "moderate",
+    "agent": "scenario_generation",
+    "input_context": {
+      "price_trend": "Upward (6M)",
+      "pe_ratio": 24.5,
+      "rsi": 56,
+      "interest_rate_trend": "Stable",
+      "inflation_trend": "Moderate",
+      "market_trend": "Positive",
+      "volatility": 0.27,
+      "beta": 1.08,
+      "key_risks": "AI competition, antitrust rulings, search disruption"
+    },
+    "expected_output_contains": ["bull", "base", "bear", "return"],
+    "expected_sentiment": "balanced",
+    "human_score": 4
+  },
+  {
+    "id": 10,
+    "ticker": "DIS",
+    "horizon": "long",
+    "risk_profile": "conservative",
+    "agent": "risk_analysis",
+    "input_context": {
+      "price_trend": "Sideways (6M)",
+      "pe_ratio": 40.0,
+      "rsi": 48,
+      "interest_rate_trend": "Falling",
+      "inflation_trend": "Cooling",
+      "market_trend": "Positive",
+      "volatility": 0.30,
+      "beta": 1.10,
+      "drawdown": "Medium"
+    },
+    "expected_output_contains": ["streaming", "parks", "content costs"],
+    "expected_sentiment": "cautious",
+    "human_score": 3
+  },
+  {
+    "id": 11,
+    "ticker": "PLTR",
+    "horizon": "medium",
+    "risk_profile": "aggressive",
+    "agent": "risk_analysis",
+    "input_context": {
+      "price_trend": "Upward (6M)",
+      "pe_ratio": 200.0,
+      "rsi": 70,
+      "interest_rate_trend": "Stable",
+      "inflation_trend": "Moderate",
+      "market_trend": "Strong",
+      "volatility": 0.55,
+      "beta": 1.85,
+      "drawdown": "High"
+    },
+    "expected_output_contains": ["valuation", "government", "profitability"],
+    "expected_sentiment": "speculative",
+    "human_score": 4
+  },
+  {
+    "id": 12,
+    "ticker": "KO",
+    "horizon": "long",
+    "risk_profile": "conservative",
+    "agent": "scenario_generation",
+    "input_context": {
+      "price_trend": "Sideways (6M)",
+      "pe_ratio": 24.0,
+      "rsi": 50,
+      "interest_rate_trend": "Falling",
+      "inflation_trend": "Cooling",
+      "market_trend": "Positive",
+      "volatility": 0.14,
+      "beta": 0.60,
+      "key_risks": "consumer spending, commodity costs, growth stagnation"
+    },
+    "expected_output_contains": ["bull", "base", "bear"],
+    "expected_sentiment": "defensive",
+    "human_score": 3
+  },
+  {
+    "id": 13,
+    "ticker": "AMD",
+    "horizon": "short",
+    "risk_profile": "aggressive",
+    "agent": "risk_analysis",
+    "input_context": {
+      "price_trend": "Downward (6M)",
+      "pe_ratio": 45.0,
+      "rsi": 35,
+      "interest_rate_trend": "Rising",
+      "inflation_trend": "Elevated",
+      "market_trend": "Weak",
+      "volatility": 0.50,
+      "beta": 1.65,
+      "drawdown": "High"
+    },
+    "expected_output_contains": ["competition", "cyclical", "market share"],
+    "expected_sentiment": "bearish",
+    "human_score": 4
+  },
+  {
+    "id": 14,
+    "ticker": "WMT",
+    "horizon": "medium",
+    "risk_profile": "conservative",
+    "agent": "scenario_generation",
+    "input_context": {
+      "price_trend": "Upward (6M)",
+      "pe_ratio": 28.0,
+      "rsi": 58,
+      "interest_rate_trend": "Stable",
+      "inflation_trend": "Moderate",
+      "market_trend": "Positive",
+      "volatility": 0.18,
+      "beta": 0.55,
+      "key_risks": "margin compression, e-commerce competition, labor costs"
+    },
+    "expected_output_contains": ["bull", "base", "bear", "prob"],
+    "expected_sentiment": "stable",
+    "human_score": 3
+  },
+  {
+    "id": 15,
+    "ticker": "COIN",
+    "horizon": "short",
+    "risk_profile": "aggressive",
+    "agent": "risk_analysis",
+    "input_context": {
+      "price_trend": "Upward (6M)",
+      "pe_ratio": null,
+      "rsi": 68,
+      "interest_rate_trend": "Stable",
+      "inflation_trend": "Moderate",
+      "market_trend": "Positive",
+      "volatility": 0.70,
+      "beta": 2.50,
+      "drawdown": "Very High"
+    },
+    "expected_output_contains": ["crypto", "regulatory", "volatility", "revenue"],
+    "expected_sentiment": "highly_speculative",
+    "human_score": 4
+  },
+  {
+    "id": 16,
+    "ticker": "BAC",
+    "horizon": "medium",
+    "risk_profile": "moderate",
+    "agent": "risk_analysis",
+    "input_context": {
+      "price_trend": "Sideways (6M)",
+      "pe_ratio": 10.5,
+      "rsi": 48,
+      "interest_rate_trend": "Falling",
+      "inflation_trend": "Cooling",
+      "market_trend": "Positive",
+      "volatility": 0.25,
+      "beta": 1.35,
+      "drawdown": "Medium"
+    },
+    "expected_output_contains": ["interest rate", "credit quality", "regulatory"],
+    "expected_sentiment": "neutral",
+    "human_score": 3
+  },
+  {
+    "id": 17,
+    "ticker": "NFLX",
+    "horizon": "medium",
+    "risk_profile": "moderate",
+    "agent": "scenario_generation",
+    "input_context": {
+      "price_trend": "Upward (6M)",
+      "pe_ratio": 38.0,
+      "rsi": 62,
+      "interest_rate_trend": "Stable",
+      "inflation_trend": "Moderate",
+      "market_trend": "Positive",
+      "volatility": 0.35,
+      "beta": 1.25,
+      "key_risks": "subscriber growth, content costs, competition"
+    },
+    "expected_output_contains": ["bull", "base", "bear"],
+    "expected_sentiment": "cautiously_optimistic",
+    "human_score": 4
+  },
+  {
+    "id": 18,
+    "ticker": "BA",
+    "horizon": "long",
+    "risk_profile": "moderate",
+    "agent": "risk_analysis",
+    "input_context": {
+      "price_trend": "Downward (6M)",
+      "pe_ratio": null,
+      "rsi": 40,
+      "interest_rate_trend": "Stable",
+      "inflation_trend": "Moderate",
+      "market_trend": "Positive",
+      "volatility": 0.40,
+      "beta": 1.45,
+      "drawdown": "High"
+    },
+    "expected_output_contains": ["safety", "supply chain", "orders"],
+    "expected_sentiment": "cautious",
+    "human_score": 4
+  },
+  {
+    "id": 19,
+    "ticker": "AAPL",
+    "horizon": "short",
+    "risk_profile": "aggressive",
+    "agent": "scenario_generation",
+    "input_context": {
+      "price_trend": "Upward (6M)",
+      "pe_ratio": 28.5,
+      "rsi": 62,
+      "interest_rate_trend": "Stable",
+      "inflation_trend": "Cooling",
+      "market_trend": "Positive",
+      "volatility": 0.24,
+      "beta": 1.18,
+      "key_risks": "iPhone demand, China risk, services growth"
+    },
+    "expected_output_contains": ["bull", "base", "bear", "return", "prob"],
+    "expected_sentiment": "optimistic",
+    "human_score": 4
+  },
+  {
+    "id": 20,
+    "ticker": "INTC",
+    "horizon": "long",
+    "risk_profile": "moderate",
+    "agent": "risk_analysis",
+    "input_context": {
+      "price_trend": "Downward (6M)",
+      "pe_ratio": null,
+      "rsi": 32,
+      "interest_rate_trend": "Stable",
+      "inflation_trend": "Moderate",
+      "market_trend": "Weak",
+      "volatility": 0.45,
+      "beta": 1.10,
+      "drawdown": "Very High"
+    },
+    "expected_output_contains": ["foundry", "competition", "market share", "turnaround"],
+    "expected_sentiment": "bearish",
+    "human_score": 3
+  }
+]

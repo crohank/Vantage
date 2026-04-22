@@ -1,0 +1,45 @@
+name: scenario_generation
+version: 1
+model_target: gemini-2.5-flash
+temperature: 0.7
+description: "Generates Bull/Base/Bear scenarios with return estimates and probabilities"
+variables:
+  - ticker
+  - horizon
+  - price_trend
+  - pe_ratio
+  - rsi
+  - interest_rate_trend
+  - inflation_trend
+  - market_trend
+  - volatility
+  - beta
+  - key_risks
+template: |
+  Generate scenarios for {ticker} ({horizon}-term horizon):
+
+  Market Context:
+  - Price Trend: {price_trend}
+  - P/E Ratio: {pe_ratio}
+  - RSI: {rsi}
+
+  Macro Context:
+  - Interest Rate Trend: {interest_rate_trend}
+  - Inflation Trend: {inflation_trend}
+  - Market Trend: {market_trend}
+
+  Risk Context:
+  - Volatility: {volatility}
+  - Beta: {beta}
+  - Key Risks: {key_risks}
+
+  Return JSON schema:
+  {{
+    "bull": {{"return": float, "prob": float}},
+    "base": {{"return": float, "prob": float}},
+    "bear": {{"return": float, "prob": float}}
+  }}
+
+  Constraints:
+  - prob values must sum to 1.0
+  - return values as decimals (e.g., 0.25 for 25%)

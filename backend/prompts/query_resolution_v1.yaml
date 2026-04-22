@@ -1,0 +1,30 @@
+name: query_resolution
+version: 1
+model_target: gemini-2.5-flash
+temperature: 0.1
+description: "Extracts stock ticker and optional parameters from natural language queries"
+variables:
+  - query
+template: |
+  You are a financial query parser. Extract the stock ticker symbol and optional parameters from the user's query.
+
+  User query: "{query}"
+
+  Return ONLY valid JSON with this exact structure:
+  {{
+      "ticker": "AAPL",
+      "horizon": null,
+      "risk_profile": null,
+      "confidence": 0.9
+  }}
+
+  Rules:
+  - "ticker": The US stock ticker symbol (uppercase, 1-5 chars). Return null if you cannot determine a specific stock.
+  - "horizon": If the user mentions a time frame, map it: "short" (days-weeks), "medium" (months), "long" (years). Otherwise null.
+  - "risk_profile": If the user mentions risk preference, map it: "conservative", "moderate", "aggressive". Otherwise null.
+  - "confidence": How confident you are in the ticker resolution (0.0-1.0).
+
+  If the query mentions a well-known company, resolve it to its ticker (e.g., "Apple" → "AAPL", "Tesla" → "TSLA").
+  If the query is ambiguous or doesn't reference a specific stock, set ticker to null.
+
+  Return ONLY the JSON, no explanation.

@@ -1,0 +1,29 @@
+name: eval_judge
+version: 1
+model_target: gemini-2.5-flash
+temperature: 0.2
+description: "LLM-as-judge prompt for evaluating financial analysis outputs"
+variables:
+  - agent_type
+  - ticker
+  - input_context
+  - expected_keywords
+  - actual_output
+template: |
+  You are evaluating a financial analysis output from a {agent_type} agent.
+
+  Stock: {ticker}
+  Input context provided to the agent:
+  {input_context}
+
+  Expected the output to mention these concepts: {expected_keywords}
+
+  Actual agent output:
+  {actual_output}
+
+  Score on two dimensions (1-5 each):
+  - Relevance: How relevant and on-topic is the output for the given stock and context? (1=completely off-topic, 5=perfectly targeted)
+  - Accuracy: How accurate and financially sound are the claims? (1=incorrect/misleading, 5=well-grounded analysis)
+
+  Return ONLY valid JSON:
+  {{"relevance": int, "accuracy": int, "reasoning": "brief explanation"}}

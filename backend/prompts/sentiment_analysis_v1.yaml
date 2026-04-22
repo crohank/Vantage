@@ -1,0 +1,13 @@
+name: sentiment_analysis
+version: 1
+model_target: mistralai/Mistral-7B-Instruct-v0.2
+temperature: 0.3
+description: "Lightweight sentiment analysis for market context"
+variables:
+  - ticker
+  - context
+template: |
+  Analyze sentiment for {ticker}:
+  {context}
+
+  Return JSON: {{"sentiment": "positive|neutral|negative", "score": 0.0-1.0}}

@@ -1,0 +1,41 @@
+name: risk_analysis
+version: 1
+model_target: gemini-2.5-flash
+temperature: 0.5
+description: "Identifies key risks from market, macro, and risk metric data"
+variables:
+  - ticker
+  - price_trend
+  - pe_ratio
+  - rsi
+  - interest_rate_trend
+  - inflation_trend
+  - market_trend
+  - volatility
+  - beta
+  - drawdown
+template: |
+  Analyze risk for {ticker}:
+  Market Data:
+  - Price Trend: {price_trend}
+  - P/E Ratio: {pe_ratio}
+  - RSI: {rsi}
+
+  Macro Environment:
+  - Interest Rate Trend: {interest_rate_trend}
+  - Inflation Trend: {inflation_trend}
+  - Market Trend: {market_trend}
+
+  Risk Metrics:
+  - Volatility: {volatility}
+  - Beta: {beta}
+  - Drawdown: {drawdown}
+
+  Return JSON schema:
+  {{
+    "volatility": float (0.0-1.0),
+    "beta": float (>0),
+    "drawdown": "Low|Medium|High",
+    "key_risks": [string, 2-5 items],
+    "reasoning": string
+  }}

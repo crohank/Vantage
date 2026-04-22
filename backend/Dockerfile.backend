@@ -1,0 +1,58 @@
+FROM node:20-alpine
+
+# Install Python 3.10 and build dependencies
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    gcc \
+    g++ \
+    make \
+    && ln -sf python3 /usr/bin/python
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY tsconfig.json ./
+
+# Install Node.js dependencies (including dev dependencies for TypeScript build)
+RUN npm ci
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Copy TypeScript source
+COPY src/ ./src/
+
+# Build TypeScript
+RUN npm run build
+
+# Copy Python application code (needed for subprocess execution)
+COPY agents/ ./agents/
+COPY graph/ ./graph/
+COPY tools/ ./tools/
+COPY schemas/ ./schemas/
+COPY services/ ./services/
+COPY config.py .
+COPY main.py .
+
+# Create outputs directory
+RUN mkdir -p /app/outputs
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=3001
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
+
+# Expose port
+EXPOSE 3001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3001/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+
+# Start server
+CMD ["npm", "start"]

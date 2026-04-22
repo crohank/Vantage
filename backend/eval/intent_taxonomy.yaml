@@ -1,0 +1,69 @@
+taxonomy:
+  version: 1
+  description: "Financial query intent classification taxonomy"
+
+  categories:
+    - name: stock_analysis
+      description: "User wants comprehensive analysis of a specific stock"
+      examples:
+        - "Analyze AAPL"
+        - "How is Apple doing?"
+        - "Give me a full report on Tesla"
+        - "What's the outlook for Microsoft?"
+        - "Should I invest in Amazon?"
+      default_agents: [market_data, macro_trends, risk, scenario, memo_writer]
+
+    - name: risk_assessment
+      description: "User specifically asks about risk factors or downside potential"
+      examples:
+        - "What are the risks of investing in NVDA?"
+        - "Is AMD risky right now?"
+        - "What could go wrong with Tesla stock?"
+        - "How volatile is COIN?"
+        - "What's the downside risk for Boeing?"
+      default_agents: [market_data, risk, memo_writer]
+
+    - name: comparison
+      description: "User wants to compare two or more stocks or sectors"
+      examples:
+        - "Compare AAPL and MSFT"
+        - "Which is better, Google or Meta?"
+        - "NVDA vs AMD, which should I buy?"
+        - "How does Tesla compare to traditional automakers?"
+      default_agents: [market_data, risk, scenario]
+
+    - name: market_outlook
+      description: "User asks about general market conditions, sectors, or macro trends"
+      examples:
+        - "How is the tech sector doing?"
+        - "What's the market outlook for 2026?"
+        - "How do interest rates affect stocks?"
+        - "Is the market overvalued?"
+        - "What sectors are performing well?"
+      default_agents: [macro_trends, scenario]
+
+    - name: document_lookup
+      description: "User asks about specific information from SEC filings or financial documents"
+      examples:
+        - "What did Apple's 10-K say about litigation risks?"
+        - "What's in Tesla's risk factors section?"
+        - "What did management say about growth in the latest filing?"
+        - "Show me the MD&A from Microsoft's annual report"
+      default_agents: [document_retrieval, memo_writer]
+
+  edge_cases:
+    - description: "Queries that mention a stock but ask a macro question"
+      example: "How does Fed rate policy affect Apple stock?"
+      resolution: "Classify as stock_analysis if a specific ticker is mentioned, market_outlook otherwise"
+
+    - description: "Queries asking 'should I buy' without specifics"
+      example: "What should I buy right now?"
+      resolution: "Classify as market_outlook — no specific stock to analyze"
+
+    - description: "Queries about crypto or non-stock assets"
+      example: "How is Bitcoin doing?"
+      resolution: "Classify as stock_analysis — system handles what it can, returns error for unsupported tickers"
+
+    - description: "Multi-intent queries"
+      example: "Compare AAPL and MSFT risk profiles"
+      resolution: "Primary intent is comparison, secondary is risk_assessment. Classify as comparison"
