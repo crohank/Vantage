@@ -1,5 +1,7 @@
 # Vantage
 
+Live App: [https://vantage-pied.vercel.app/analyse](https://vantage-pied.vercel.app/analyse)
+
 A multi-agent AI system built with LangGraph that generates structured investment research reports with risk modeling and scenario analysis. The system features a full-stack web application with real-time progress tracking and a Python backend orchestrating specialized AI agents.
 
 ## 🎯 Project Overview
