@@ -39,6 +39,7 @@ export interface AnalysisResults {
   memo: string
   market_data?: Record<string, any>
   macro_data?: Record<string, any>
+  news_analysis?: Record<string, any>
   risk_analysis?: Record<string, any>
   document_sources?: DocumentRecord[]
   timing?: Record<string, number>
@@ -53,11 +54,17 @@ export interface DocumentRecord {
   title?: string
   filename?: string
   source_url?: string
+  source_name?: string
   filing_date?: string
+  published_at?: string
   chunks?: number
   status?: string
   updated_at?: string
   file_path?: string
+  summary_text?: string
+  impact_direction?: string
+  impact_score?: number
+  impact_reasoning?: string
 }
 
 export interface AnalysisRecord {
@@ -71,6 +78,7 @@ export interface AnalysisRecord {
   memoMarkdown?: string
   marketData?: Record<string, any>
   macroData?: Record<string, any>
+  newsAnalysis?: Record<string, any>
   riskAnalysis?: Record<string, any>
   documentsUsed?: DocumentRecord[]
   createdAt?: string
@@ -78,6 +86,7 @@ export interface AnalysisRecord {
 
 export interface DocumentDetail extends DocumentRecord {
   has_pdf?: boolean
+  has_source_url?: boolean
   has_text_preview?: boolean
   file_url?: string
   preview_text?: string
@@ -479,4 +488,3 @@ export async function analyzeStock(
 
   return result.data
 }
-

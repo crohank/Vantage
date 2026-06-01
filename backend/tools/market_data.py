@@ -102,6 +102,9 @@ def get_valuation_metrics(ticker: str) -> Dict[str, Any]:
         info = stock.info
         
         metrics = {
+            "company_name": info.get("longName", None) or info.get("shortName", None),
+            "short_name": info.get("shortName", None),
+            "long_name": info.get("longName", None),
             "pe_ratio": info.get("trailingPE", None),
             "forward_pe": info.get("forwardPE", None),
             "pb_ratio": info.get("priceToBook", None),

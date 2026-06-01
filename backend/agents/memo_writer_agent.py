@@ -123,6 +123,7 @@ def memo_writer_agent(state: ResearchState) -> ResearchState:
         risk_analysis = state.get("risk_analysis", {})
         scenarios = state.get("scenarios", {})
         sec_context = state.get("sec_filing_context", {})
+        news_analysis = state.get("news_analysis", {})
 
         prompt = render_prompt("memo_writer", {
             "ticker": ticker,
@@ -145,6 +146,11 @@ def memo_writer_agent(state: ResearchState) -> ResearchState:
             "sec_risk_factors": sec_context.get("risk_factors_context", "Not available"),
             "sec_mda": sec_context.get("mda_context", "Not available"),
             "uploaded_context": sec_context.get("uploaded_context", "Not available"),
+            "news_summary": news_analysis.get("overall_summary", "Not available"),
+            "news_articles": "\n".join(
+                f"- {item.get('title', '')}: {item.get('summary', '')} ({item.get('impact_direction', 'neutral')})"
+                for item in news_analysis.get("article_summaries", [])[:5]
+            ) or "Not available",
         })
 
         memo = None
@@ -199,6 +205,7 @@ def memo_writer_agent(state: ResearchState) -> ResearchState:
                 "scenarios": state.get("scenarios"),
                 "marketData": state.get("market_data"),
                 "macroData": state.get("macro_data"),
+                "newsAnalysis": state.get("news_analysis"),
                 "riskAnalysis": state.get("risk_analysis"),
                 "memoMarkdown": state.get("memo"),
                 "documentsUsed": state.get("document_sources", []),

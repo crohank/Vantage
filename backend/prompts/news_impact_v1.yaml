@@ -1,0 +1,36 @@
+name: news_impact
+version: 1
+model_target: gemini-2.5-flash
+temperature: 0.3
+description: "Selects material company news items and summarizes their likely stock impact"
+variables:
+  - ticker
+  - company_name
+  - article_count
+  - articles
+template: |
+  You are analyzing recent news for {company_name} ({ticker}).
+
+  Review the {article_count} candidate articles below. Select only the articles that are materially relevant to how the stock might be impacted.
+
+  Candidate Articles:
+  {articles}
+
+  Return JSON with this schema:
+  {{
+    "overall_summary": "2-4 sentence summary of the overall likely stock impact from the selected news",
+    "articles": [
+      {{
+        "article_number": integer,
+        "summary": "1-2 sentence source-wise summary",
+        "impact_direction": "positive|negative|mixed|neutral",
+        "impact_score": integer,
+        "reasoning": "1 sentence explaining why this could matter for the stock"
+      }}
+    ]
+  }}
+
+  Constraints:
+  - Only include articles that are materially relevant to the stock.
+  - impact_score must be 1-5, where 5 is strongest expected impact.
+  - If nothing is material, return an empty articles array and explain that in overall_summary.

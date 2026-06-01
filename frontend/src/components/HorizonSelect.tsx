@@ -1,4 +1,5 @@
-import { Form } from 'react-bootstrap'
+import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group'
+import { Label } from './ui/label'
 
 type Horizon = 'short' | 'medium' | 'long'
 
@@ -7,22 +8,31 @@ interface HorizonSelectProps {
   onChange: (value: Horizon) => void
 }
 
+const OPTIONS: { value: Horizon; label: string; sublabel: string }[] = [
+  { value: 'short', label: 'Short', sublabel: '< 3mo' },
+  { value: 'medium', label: 'Medium', sublabel: '3-12mo' },
+  { value: 'long', label: 'Long', sublabel: '> 1yr' }
+]
+
 function HorizonSelect({ value, onChange }: HorizonSelectProps) {
   return (
-    <Form.Group className="mb-3">
-      <Form.Label htmlFor="horizon">Time Horizon</Form.Label>
-      <Form.Select
-        id="horizon"
+    <div className="space-y-1.5">
+      <Label>Horizon</Label>
+      <ToggleGroup
+        type="single"
         value={value}
-        onChange={(e) => onChange(e.target.value as Horizon)}
+        onValueChange={(v) => v && onChange(v as Horizon)}
+        className="w-full"
       >
-        <option value="short">Short Term</option>
-        <option value="medium">Medium Term</option>
-        <option value="long">Long Term</option>
-      </Form.Select>
-    </Form.Group>
+        {OPTIONS.map((opt) => (
+          <ToggleGroupItem key={opt.value} value={opt.value} className="flex-1 flex-col gap-0 py-1 h-auto">
+            <span className="text-[12px] font-semibold">{opt.label}</span>
+            <span className="font-mono text-[10px] text-muted-foreground">{opt.sublabel}</span>
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+    </div>
   )
 }
 
 export default HorizonSelect
-

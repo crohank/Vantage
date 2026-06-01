@@ -1,0 +1,149 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light theme — parchment, deep slate */
+    --background: 60 14% 97%;
+    --foreground: 222 26% 12%;
+    --surface: 0 0% 100%;
+    --surface-elevated: 60 14% 99%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 26% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 26% 12%;
+
+    --primary: 188 86% 43%;
+    --primary-foreground: 188 86% 8%;
+    --secondary: 220 13% 91%;
+    --secondary-foreground: 222 26% 18%;
+    --muted: 220 13% 94%;
+    --muted-foreground: 220 9% 42%;
+    --accent: 188 86% 43%;
+    --accent-foreground: 188 86% 8%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 86%;
+    --border-strong: 220 13% 74%;
+    --input: 220 13% 86%;
+    --ring: 188 86% 43%;
+
+    --bull: 158 64% 40%;
+    --bear: 0 72% 51%;
+    --neutral: 220 9% 46%;
+    --warning: 38 92% 50%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Dark theme — terminal */
+    --background: 218 33% 6%;
+    --foreground: 213 31% 92%;
+    --surface: 218 27% 10%;
+    --surface-elevated: 218 27% 13%;
+
+    --card: 218 27% 10%;
+    --card-foreground: 213 31% 92%;
+    --popover: 218 27% 9%;
+    --popover-foreground: 213 31% 92%;
+
+    --primary: 188 95% 55%;
+    --primary-foreground: 218 33% 6%;
+    --secondary: 218 22% 16%;
+    --secondary-foreground: 213 31% 92%;
+    --muted: 218 22% 14%;
+    --muted-foreground: 218 12% 60%;
+    --accent: 188 95% 55%;
+    --accent-foreground: 218 33% 6%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 218 20% 18%;
+    --border-strong: 218 20% 26%;
+    --input: 218 20% 18%;
+    --ring: 188 95% 55%;
+
+    --bull: 158 64% 48%;
+    --bear: 0 72% 60%;
+    --neutral: 218 12% 60%;
+    --warning: 38 92% 56%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html, body, #root {
+    @apply h-full;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: 'ss01', 'cv11';
+  }
+
+  /* Subtle Bloomberg-style grid backdrop */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(to right, hsl(var(--foreground) / 0.025) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--foreground) / 0.025) 1px, transparent 1px);
+    background-size: 48px 48px;
+    z-index: 0;
+    mask-image: radial-gradient(ellipse at top, black 0%, transparent 80%);
+  }
+
+  #root {
+    @apply relative z-10;
+  }
+
+  /* Tabular numerics for financial data */
+  .font-mono, .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Tighter heading tracking */
+  h1, h2, h3, h4 {
+    letter-spacing: -0.02em;
+  }
+
+  /* Focus visible */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border-strong));
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
+}
+
+@layer utilities {
+  .text-bull { color: hsl(var(--bull)); }
+  .text-bear { color: hsl(var(--bear)); }
+  .text-warning { color: hsl(var(--warning)); }
+  .bg-bull { background-color: hsl(var(--bull)); }
+  .bg-bear { background-color: hsl(var(--bear)); }
+
+  .text-balance { text-wrap: balance; }
+}

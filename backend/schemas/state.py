@@ -17,6 +17,7 @@ class ResearchState(TypedDict):
 
     market_data: Dict[str, Any]
     macro_data: Dict[str, Any]
+    news_analysis: Dict[str, Any]
     risk_analysis: Dict[str, Any]
     scenarios: Dict[str, Any]
 
@@ -32,4 +33,3 @@ class ResearchState(TypedDict):
     # Telemetry
     _analysis_id: str
     _telemetry: Dict[str, Any]
-

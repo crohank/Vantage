@@ -1,60 +1,89 @@
 import { useEffect, useRef } from 'react'
-import { Card, ListGroup } from 'react-bootstrap'
+import { Card, CardHeader, CardTitle, CardContent } from './ui/card'
 import { ProgressData } from '../services/api'
+import { cn } from '../lib/utils'
 
 interface ProgressDisplayProps {
   progress: ProgressData[]
 }
 
-function ProgressDisplay({ progress }: ProgressDisplayProps) {
-  const progressEndRef = useRef<HTMLDivElement>(null)
+function statusTone(step: string): 'error' | 'success' | 'info' | 'muted' {
+  const s = step.toLowerCase()
+  if (s.includes('error')) return 'error'
+  if (s.includes('ok') || s.includes('complete')) return 'success'
+  if (
+    s.includes('market') ||
+    s.includes('macro') ||
+    s.includes('risk') ||
+    s.includes('scenario') ||
+    s.includes('memo') ||
+    s.includes('news')
+  )
+    return 'info'
+  return 'muted'
+}
 
-  // Auto-scroll to bottom when new progress arrives
+function ProgressDisplay({ progress }: ProgressDisplayProps) {
+  const endRef = useRef<HTMLLIElement>(null)
+
   useEffect(() => {
-    progressEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [progress])
 
-  const getVariant = (step: string): string => {
-    const stepLower = step.toLowerCase()
-    if (stepLower.includes('error')) return 'danger'
-    if (stepLower.includes('ok') || stepLower.includes('complete')) return 'success'
-    if (stepLower.includes('market') || stepLower.includes('macro') || stepLower.includes('risk') || stepLower.includes('scenario') || stepLower.includes('memo')) return 'info'
-    return 'secondary'
-  }
-
   return (
-    <Card className="theme-card mb-4 shadow">
-      <Card.Header>
-        <h3 className="mb-0">Analysis Progress</h3>
-      </Card.Header>
-      <Card.Body>
-        <div style={{ maxHeight: '400px', overflowY: 'auto', fontFamily: 'monospace', fontSize: '0.9rem' }}>
+    <Card>
+      <CardHeader className="flex-row items-center justify-between border-b border-border pb-3">
+        <CardTitle className="flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+          </span>
+          Analysis Stream
+        </CardTitle>
+        <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+          {progress.length} events
+        </span>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="max-h-[360px] overflow-y-auto bg-surface-elevated/30 px-4 py-3 font-mono text-[12px]">
           {progress.length === 0 ? (
-            <div className="text-muted">Starting analysis...</div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <span className="animate-pulse">▍</span>
+              <span>Initializing agents…</span>
+            </div>
           ) : (
-            <ListGroup variant="flush">
-              {progress.map((item, index) => (
-                <ListGroup.Item
-                  key={index}
-                  variant={getVariant(item.step) as any}
-                  className="d-flex justify-content-between align-items-start"
-                >
-                  <div className="flex-grow-1">
-                    <small className="text-muted me-3">
-                      {new Date(item.timestamp).toLocaleTimeString()}
-                    </small>
-                    <span>{item.message}</span>
-                  </div>
-                </ListGroup.Item>
-              ))}
-            </ListGroup>
+            <ol className="space-y-1.5">
+              {progress.map((item, i) => {
+                const tone = statusTone(item.step)
+                const ts = new Date(item.timestamp).toLocaleTimeString(undefined, {
+                  hour12: false,
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit'
+                })
+                return (
+                  <li key={i} className="flex items-start gap-3 leading-relaxed">
+                    <span className="shrink-0 text-muted-foreground/70">{ts}</span>
+                    <span
+                      className={cn(
+                        'mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full',
+                        tone === 'error' && 'bg-bear',
+                        tone === 'success' && 'bg-bull',
+                        tone === 'info' && 'bg-primary',
+                        tone === 'muted' && 'bg-muted-foreground/40'
+                      )}
+                    />
+                    <span className="min-w-0 flex-1 break-words text-foreground/90">{item.message}</span>
+                  </li>
+                )
+              })}
+              <li ref={endRef} />
+            </ol>
           )}
-          <div ref={progressEndRef} />
         </div>
-      </Card.Body>
+      </CardContent>
     </Card>
   )
 }
 
 export default ProgressDisplay
-

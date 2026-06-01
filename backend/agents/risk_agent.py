@@ -13,7 +13,8 @@ from tools.risk_metrics import get_risk_metrics
 def identify_key_risks(ticker: str, market_data: Dict[str, Any],
                       macro_data: Dict[str, Any],
                       risk_metrics: Dict[str, Any],
-                      sec_filing_context: Dict[str, Any] = None) -> List[str]:
+                      sec_filing_context: Dict[str, Any] = None,
+                      news_analysis: Dict[str, Any] = None) -> List[str]:
     """
     Use LLM to identify key risks based on data.
     Uses Gemini Flash for structured reasoning.
@@ -35,6 +36,7 @@ def identify_key_risks(ticker: str, market_data: Dict[str, Any],
 
         # Use v2 prompt if SEC filing context is available, otherwise v1
         sec_context = sec_filing_context or {}
+        news_context = news_analysis or {}
         variables = {
             "ticker": ticker,
             "price_trend": market_data.get('price_trend', 'Unknown'),
@@ -46,17 +48,24 @@ def identify_key_risks(ticker: str, market_data: Dict[str, Any],
             "volatility": risk_metrics.get('volatility', 'Unknown'),
             "beta": risk_metrics.get('beta', 'Unknown'),
             "drawdown": risk_metrics.get('drawdown', 'Unknown'),
+            "news_summary": news_context.get("overall_summary", "Not available"),
+            "news_articles": "\n".join(
+                f"- {item.get('title', '')}: {item.get('summary', '')} ({item.get('impact_direction', 'neutral')})"
+                for item in news_context.get("article_summaries", [])[:5]
+            ) or "Not available",
         }
 
-        # Check if v2 prompt exists and SEC context is available
+        # Use the latest prompt when richer context is available.
         sec_filing = sec_context if sec_context else {}
         has_sec = sec_filing.get('available', False)
-        has_v2 = 2 in list_versions("risk_analysis")
+        has_news = bool(news_context.get("article_summaries"))
+        versions = list_versions("risk_analysis")
+        latest_version = max(versions) if versions else 1
 
-        if has_sec and has_v2:
+        if (has_sec or has_news) and latest_version >= 2:
             variables["sec_risk_factors"] = sec_filing.get('risk_factors_context', 'Not available')
             variables["uploaded_context"] = sec_filing.get('uploaded_context', 'Not available')
-            prompt = render_prompt("risk_analysis", variables, version=2)
+            prompt = render_prompt("risk_analysis", variables, version=latest_version)
         else:
             prompt = render_prompt("risk_analysis", variables, version=1)
 
@@ -101,9 +110,10 @@ def risk_agent(state: ResearchState) -> ResearchState:
     
     # Identify key risks using LLM
     sec_filing_context = state.get("sec_filing_context", {})
+    news_analysis = state.get("news_analysis", {})
     print("[Risk Analyst Agent] Calling Gemini API...")
     llm_start = time.time()
-    key_risks = identify_key_risks(ticker, market_data, macro_data, risk_metrics, sec_filing_context)
+    key_risks = identify_key_risks(ticker, market_data, macro_data, risk_metrics, sec_filing_context, news_analysis)
     llm_time = time.time() - llm_start
     print(f"[OK] Risk analysis complete in {llm_time:.1f}s")
     

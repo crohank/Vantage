@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pdfinfo *)",
+      "Bash(npx tsc --noEmit)"
+    ]
+  }
+}

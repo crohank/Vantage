@@ -33,6 +33,7 @@ export interface AnalysisResult {
   memo: string;
   market_data?: Record<string, any>;
   macro_data?: Record<string, any>;
+  news_analysis?: Record<string, any>;
   risk_analysis?: Record<string, any>;
   timing?: Record<string, number>;
   telemetry?: TelemetrySummary;
@@ -543,4 +544,3 @@ function extractValue(text: string, regex: RegExp): string | null {
 }
 
 // Memo content is now returned directly in JSON output.
-

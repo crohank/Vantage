@@ -1,4 +1,3 @@
-import { Container } from 'react-bootstrap'
 import { Outlet } from 'react-router-dom'
 import TopNav from '../components/TopNav'
 import { DocumentsProvider } from '../context/DocumentsContext'
@@ -6,11 +5,13 @@ import { DocumentsProvider } from '../context/DocumentsContext'
 function AppShell() {
   return (
     <DocumentsProvider>
-      <div className="app-shell min-vh-100" data-bs-theme="dark">
+      <div className="flex min-h-screen flex-col bg-background text-foreground">
         <TopNav />
-        <Container fluid="xxl" className="pt-3 pb-4">
-          <Outlet />
-        </Container>
+        <main className="flex-1">
+          <div className="mx-auto w-full max-w-screen-2xl px-4 py-4 sm:py-6">
+            <Outlet />
+          </div>
+        </main>
       </div>
     </DocumentsProvider>
   )
