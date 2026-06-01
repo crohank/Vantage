@@ -16,7 +16,14 @@ def build_preview(document: Dict[str, Any]) -> Dict[str, Any]:
     filename = document.get("filename", "")
 
     chunks: List[str] = []
-    if source_type == "user_pdf" and analysis_id and ticker:
+    if source_type == "news_article":
+        summary_text = str(document.get("summary_text", "")).strip()
+        reasoning = str(document.get("impact_reasoning", "")).strip()
+        if summary_text:
+            chunks.append(summary_text)
+        if reasoning:
+            chunks.append(f"Why it matters: {reasoning}")
+    elif source_type == "user_pdf" and analysis_id and ticker:
         for chunk in store.query_user_documents(
             analysis_id=analysis_id,
             ticker=ticker,

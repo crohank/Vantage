@@ -154,6 +154,7 @@ def main():
                 "memo": result.get('memo', ''),
                 "market_data": result.get('market_data', {}),
                 "macro_data": result.get('macro_data', {}),
+                "news_analysis": result.get('news_analysis', {}),
                 "risk_analysis": result.get('risk_analysis', {}),
                 "document_sources": result.get('document_sources', []),
                 "timing": {
@@ -177,4 +178,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

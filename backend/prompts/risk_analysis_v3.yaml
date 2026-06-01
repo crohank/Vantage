@@ -1,0 +1,59 @@
+name: risk_analysis
+version: 3
+model_target: gemini-2.5-flash
+temperature: 0.5
+description: "Identifies key risks from market, macro, risk metrics, SEC filing context, and news context"
+variables:
+  - ticker
+  - price_trend
+  - pe_ratio
+  - rsi
+  - interest_rate_trend
+  - inflation_trend
+  - market_trend
+  - volatility
+  - beta
+  - drawdown
+  - sec_risk_factors
+  - uploaded_context
+  - news_summary
+  - news_articles
+template: |
+  Analyze risk for {ticker}:
+  Market Data:
+  - Price Trend: {price_trend}
+  - P/E Ratio: {pe_ratio}
+  - RSI: {rsi}
+
+  Macro Environment:
+  - Interest Rate Trend: {interest_rate_trend}
+  - Inflation Trend: {inflation_trend}
+  - Market Trend: {market_trend}
+
+  Risk Metrics:
+  - Volatility: {volatility}
+  - Beta: {beta}
+  - Drawdown: {drawdown}
+
+  SEC Filing Context (Risk Factors from 10-K):
+  {sec_risk_factors}
+
+  User Uploaded Document Context:
+  {uploaded_context}
+
+  Recent Company News Impact:
+  - Overall: {news_summary}
+  - Source Summaries:
+  {news_articles}
+
+  Use quantitative data, SEC context, uploaded context, and recent company news to identify risks.
+  Cite specific risk factors or news-driven catalysts when applicable.
+
+  Return JSON schema:
+  {{
+    "volatility": float (0.0-1.0),
+    "beta": float (>0),
+    "drawdown": "Low|Medium|High",
+    "key_risks": [string, 2-5 items],
+    "reasoning": string
+  }}

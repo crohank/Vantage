@@ -1,4 +1,4 @@
-import { Card, Row, Col } from 'react-bootstrap'
+import { cn, formatCurrency, formatLargeNumber, formatNumber, formatPercent } from '../lib/utils'
 
 interface StockStatsProps {
   marketData?: {
@@ -16,170 +16,99 @@ interface StockStatsProps {
   }
 }
 
+function Stat({
+  label,
+  value,
+  accent = false,
+  mono = true
+}: {
+  label: string
+  value: React.ReactNode
+  accent?: boolean
+  mono?: boolean
+}) {
+  return (
+    <div className="flex flex-col gap-0.5 border-l border-border px-3 py-1 first:border-l-0 first:pl-0">
+      <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+        {label}
+      </span>
+      <span
+        className={cn(
+          mono && 'font-mono tabular-nums',
+          accent ? 'text-[20px] font-bold text-foreground' : 'text-[14px] font-semibold text-foreground'
+        )}
+      >
+        {value}
+      </span>
+    </div>
+  )
+}
+
 function StockStats({ marketData }: StockStatsProps) {
-  // Return null if no market data
-  if (!marketData?.valuation) {
-    return null
-  }
+  if (!marketData?.valuation) return null
+  const v = marketData.valuation
 
-  const valuation = marketData.valuation
+  const rangePos =
+    v['52_week_high'] && v['52_week_low'] && v.current_price && v['52_week_high'] !== v['52_week_low']
+      ? (v.current_price - v['52_week_low']) / (v['52_week_high'] - v['52_week_low'])
+      : null
 
-  // Format currency
-  const formatCurrency = (value: number | undefined): string => {
-    if (value === undefined || value === null) return 'N/A'
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(value)
-  }
-
-  // Format market cap (B for billions, T for trillions)
-  const formatMarketCap = (value: number | undefined): string => {
-    if (value === undefined || value === null) return 'N/A'
-    if (value >= 1e12) {
-      return `$${(value / 1e12).toFixed(2)}T`
-    } else if (value >= 1e9) {
-      return `$${(value / 1e9).toFixed(2)}B`
-    } else if (value >= 1e6) {
-      return `$${(value / 1e6).toFixed(2)}M`
-    }
-    return formatCurrency(value)
-  }
-
-  // Format percentage
-  const formatPercentage = (value: number | undefined): string => {
-    if (value === undefined || value === null) return 'N/A'
-    return `${(value * 100).toFixed(2)}%`
-  }
-
-  // Format decimal (for ratios)
-  const formatDecimal = (value: number | undefined, decimals: number = 2): string => {
-    if (value === undefined || value === null) return 'N/A'
-    return value.toFixed(decimals)
-  }
-
-  // Calculate position in 52-week range (0 to 1)
-  const getRangePosition = (): number | null => {
-    if (!valuation['52_week_high'] || !valuation['52_week_low'] || !valuation.current_price) {
-      return null
-    }
-    const range = valuation['52_week_high'] - valuation['52_week_low']
-    if (range === 0) return null
-    return (valuation.current_price - valuation['52_week_low']) / range
-  }
-
-  const rangePosition = getRangePosition()
+  const divYield = v.dividend_yield != null ? v.dividend_yield * 100 : null
 
   return (
-    <Card className="mb-4 shadow-sm">
-      <Card.Header>
-        <h3 className="mb-0">Stock Statistics</h3>
-      </Card.Header>
-      <Card.Body>
-        <Row className="g-3">
-          {/* Current Price - Prominent */}
-          <Col xs={12} md={4}>
-            <div className="text-center p-3 bg-light rounded">
-              <div className="text-muted small text-uppercase mb-1">Current Price</div>
-              <div className="h4 mb-0 fw-bold text-primary">
-                {formatCurrency(valuation.current_price)}
-              </div>
-            </div>
-          </Col>
+    <div className="space-y-3 rounded-lg border border-border bg-card p-4">
+      {/* Hero row: price + market cap + 52w range */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_1fr_auto]">
+        <Stat label="Current Price" value={formatCurrency(v.current_price)} accent />
 
-          {/* 52-Week Range */}
-          <Col xs={12} md={4}>
-            <div className="p-3">
-              <div className="text-muted small mb-2">52-Week Range</div>
-              <div className="mb-1">
-                <span className="fw-semibold">High: </span>
-                {formatCurrency(valuation['52_week_high'])}
-              </div>
-              <div className="mb-2">
-                <span className="fw-semibold">Low: </span>
-                {formatCurrency(valuation['52_week_low'])}
-              </div>
-              {/* Visual indicator of position in range */}
-              {rangePosition !== null && (
-                <div className="position-relative">
-                  <div className="progress" style={{ height: '8px' }}>
-                    <div
-                      className="progress-bar bg-success"
-                      role="progressbar"
-                      style={{ width: `${rangePosition * 100}%` }}
-                      aria-valuenow={rangePosition * 100}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                    />
-                  </div>
-                  <small className="text-muted">
-                    {rangePosition > 0.7 ? 'Near high' : rangePosition < 0.3 ? 'Near low' : 'Mid range'}
-                  </small>
-                </div>
-              )}
-            </div>
-          </Col>
+        <div className="flex flex-col gap-1 px-3 sm:border-l sm:border-border">
+          <div className="flex items-center justify-between text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            <span>52W Range</span>
+            {rangePos !== null && (
+              <span className="font-mono normal-case tracking-normal">
+                {rangePos > 0.7 ? 'Near high' : rangePos < 0.3 ? 'Near low' : 'Mid range'}
+              </span>
+            )}
+          </div>
+          <div className="relative mt-1 h-1.5 w-full rounded-full bg-surface-elevated">
+            <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-bear via-warning to-bull"
+              style={{ width: '100%', opacity: 0.4 }}
+            />
+            {rangePos !== null && (
+              <div
+                className="absolute top-1/2 h-3 w-1 -translate-y-1/2 -translate-x-1/2 rounded-full bg-foreground shadow"
+                style={{ left: `${Math.max(0, Math.min(1, rangePos)) * 100}%` }}
+              />
+            )}
+          </div>
+          <div className="flex justify-between font-mono text-[11px] tabular-nums text-muted-foreground">
+            <span>{formatCurrency(v['52_week_low'])}</span>
+            <span>{formatCurrency(v['52_week_high'])}</span>
+          </div>
+        </div>
 
-          {/* Market Cap */}
-          <Col xs={12} md={4}>
-            <div className="text-center p-3 bg-light rounded">
-              <div className="text-muted small text-uppercase mb-1">Market Cap</div>
-              <div className="h5 mb-0 fw-semibold">
-                {formatMarketCap(valuation.market_cap)}
-              </div>
-            </div>
-          </Col>
+        <Stat label="Market Cap" value={formatLargeNumber(v.market_cap)} accent />
+      </div>
 
-          {/* Valuation Metrics Row */}
-          <Col xs={6} sm={4} md={3}>
-            <div className="p-2">
-              <div className="text-muted small mb-1">P/E Ratio</div>
-              <div className="fw-semibold">{formatDecimal(valuation.pe_ratio)}</div>
-            </div>
-          </Col>
-
-          {valuation.forward_pe && (
-            <Col xs={6} sm={4} md={3}>
-              <div className="p-2">
-                <div className="text-muted small mb-1">Forward P/E</div>
-                <div className="fw-semibold">{formatDecimal(valuation.forward_pe)}</div>
-              </div>
-            </Col>
-          )}
-
-          {valuation.dividend_yield !== undefined && valuation.dividend_yield !== null && valuation.dividend_yield > 0 && (
-            <Col xs={6} sm={4} md={3}>
-              <div className="p-2">
-                <div className="text-muted small mb-1">Dividend Yield</div>
-                <div className="fw-semibold text-success">{formatPercentage(valuation.dividend_yield)}</div>
-              </div>
-            </Col>
-          )}
-
-          {valuation.pb_ratio && (
-            <Col xs={6} sm={4} md={3}>
-              <div className="p-2">
-                <div className="text-muted small mb-1">P/B Ratio</div>
-                <div className="fw-semibold">{formatDecimal(valuation.pb_ratio)}</div>
-              </div>
-            </Col>
-          )}
-
-          {valuation.ps_ratio && (
-            <Col xs={6} sm={4} md={3}>
-              <div className="p-2">
-                <div className="text-muted small mb-1">P/S Ratio</div>
-                <div className="fw-semibold">{formatDecimal(valuation.ps_ratio)}</div>
-              </div>
-            </Col>
-          )}
-        </Row>
-      </Card.Body>
-    </Card>
+      {/* Ratios row */}
+      <div className="grid grid-cols-2 gap-2 border-t border-border pt-3 sm:grid-cols-5">
+        <Stat label="P/E" value={formatNumber(v.pe_ratio)} />
+        <Stat label="Fwd P/E" value={formatNumber(v.forward_pe)} />
+        <Stat label="P/B" value={formatNumber(v.pb_ratio)} />
+        <Stat label="P/S" value={formatNumber(v.ps_ratio)} />
+        <Stat
+          label="Div Yield"
+          value={
+            divYield !== null && divYield > 0 ? (
+              <span className="text-bull">{formatPercent(divYield)}</span>
+            ) : (
+              '—'
+            )
+          }
+        />
+      </div>
+    </div>
   )
 }
 
 export default StockStats
-

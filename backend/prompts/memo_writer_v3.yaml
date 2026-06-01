@@ -1,0 +1,66 @@
+name: memo_writer
+version: 3
+model_target: gemini-2.5-flash
+temperature: 0.3
+description: "Generates professional investment memo with SEC filing context and news impact"
+variables:
+  - ticker
+  - horizon
+  - risk_profile
+  - recommendation
+  - confidence
+  - price_trend
+  - pe_ratio
+  - interest_rate_trend
+  - market_trend
+  - volatility
+  - beta
+  - bull_return
+  - bull_prob
+  - base_return
+  - base_prob
+  - bear_return
+  - bear_prob
+  - sec_risk_factors
+  - sec_mda
+  - uploaded_context
+  - news_summary
+  - news_articles
+template: |
+  Write investment memo for {ticker} ({horizon} term, {risk_profile} risk):
+
+  Key Data:
+  - Recommendation: {recommendation} (Confidence: {confidence})
+  - Price Trend: {price_trend}, P/E: {pe_ratio}
+  - Macro: {interest_rate_trend} rates, {market_trend} market
+  - Risk: Vol {volatility}, Beta {beta}
+  - Scenarios: Bull {bull_return} ({bull_prob}), Base {base_return} ({base_prob}), Bear {bear_return} ({bear_prob})
+
+  SEC Filing Context (Risk Factors from 10-K):
+  {sec_risk_factors}
+
+  SEC Filing Context (Management Discussion & Analysis):
+  {sec_mda}
+
+  User Uploaded Document Context:
+  {uploaded_context}
+
+  Recent Company News Impact:
+  - Overall: {news_summary}
+  - Source Summaries:
+  {news_articles}
+
+  When available, incorporate insights from the SEC filing and recent company news into your analysis.
+  Cite specific points from the filings and recent coverage to ground your thesis and risk assessment.
+
+  Format: Markdown with sections:
+  1. Executive Summary
+  2. Thesis
+  3. Supporting Data (including SEC filing insights)
+  4. News Impact
+  5. Risks (grounded in 10-K risk factors and recent developments)
+  6. Scenarios
+  7. Recommendation
+  8. Disclaimer
+
+  Tone: Professional, no hype language

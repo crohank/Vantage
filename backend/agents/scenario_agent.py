@@ -25,6 +25,7 @@ def scenario_agent(state: ResearchState) -> ResearchState:
     market_data = state.get("market_data", {})
     macro_data = state.get("macro_data", {})
     risk_analysis = state.get("risk_analysis", {})
+    news_analysis = state.get("news_analysis", {})
     
     agent_start = time.time()
     print(f"\n[Scenario Agent] Calling Gemini API...")
@@ -48,6 +49,11 @@ def scenario_agent(state: ResearchState) -> ResearchState:
             "volatility": risk_analysis.get('volatility', 'Unknown'),
             "beta": risk_analysis.get('beta', 'Unknown'),
             "key_risks": ', '.join(risk_analysis.get('key_risks', [])),
+            "news_summary": news_analysis.get("overall_summary", "Not available"),
+            "news_articles": "\n".join(
+                f"- {item.get('title', '')}: {item.get('summary', '')} ({item.get('impact_direction', 'neutral')})"
+                for item in news_analysis.get("article_summaries", [])[:5]
+            ) or "Not available",
         })
 
         scenarios = gemini.invoke_json(prompt, temperature=0.7)

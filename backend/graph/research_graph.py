@@ -13,6 +13,7 @@ from langgraph.graph import StateGraph, END
 from schemas.state import ResearchState
 from agents.market_data_agent import market_data_agent
 from agents.macro_trends_agent import macro_trends_agent
+from agents.news_agent import news_agent
 from agents.risk_agent import risk_agent
 from agents.scenario_agent import scenario_agent
 from agents.memo_writer_agent import memo_writer_agent
@@ -64,6 +65,7 @@ def create_research_graph() -> Any:
     # OPTIMIZATION: Run market_data and macro_trends in parallel since they're independent
     workflow.add_node("data_collection", run_parallel_data_collection)
     workflow.add_node("document_retrieval", document_retriever_agent)
+    workflow.add_node("news_analysis", news_agent)
     workflow.add_node("risk_analysis", risk_agent)
     workflow.add_node("scenario_analysis", scenario_agent)
     workflow.add_node("memo_writer", memo_writer_agent)
@@ -73,7 +75,8 @@ def create_research_graph() -> Any:
 
     # After parallel data collection, retrieve SEC filings, then run dependent agents
     workflow.add_edge("data_collection", "document_retrieval")
-    workflow.add_edge("document_retrieval", "risk_analysis")
+    workflow.add_edge("document_retrieval", "news_analysis")
+    workflow.add_edge("news_analysis", "risk_analysis")
     workflow.add_edge("risk_analysis", "scenario_analysis")
     workflow.add_edge("scenario_analysis", "memo_writer")
     workflow.add_edge("memo_writer", END)
@@ -114,6 +117,7 @@ def run_research_analysis(
         "original_query": "",
         "market_data": {},
         "macro_data": {},
+        "news_analysis": {},
         "sec_filing_context": {},
         "uploaded_document": uploaded_document or {},
         "document_sources": [],

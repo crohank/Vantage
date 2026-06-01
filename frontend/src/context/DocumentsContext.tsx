@@ -19,7 +19,13 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
     openDocs,
     activeDocId,
     openDocument: (doc) => {
-      setOpenDocs((prev) => (prev.some((d) => d.id === doc.id) ? prev : [...prev, doc]))
+      setOpenDocs((prev) => {
+        const existingIndex = prev.findIndex((d) => d.id === doc.id)
+        if (existingIndex === -1) return [...prev, doc]
+        const next = [...prev]
+        next[existingIndex] = doc
+        return next
+      })
       setActiveDocId(doc.id)
     },
     closeDocument: (id) => {

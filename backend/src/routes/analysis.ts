@@ -456,7 +456,7 @@ router.get('/documents/:documentId', async (req: Request, res: Response) => {
       console.warn('[API] Document preview unavailable:', previewError.message);
     }
 
-    const hasPdf = doc.source_type === 'user_pdf' || Boolean(doc.source_url);
+    const hasPdf = Boolean(doc.gridfs_file_id);
     const fileUrl = doc.gridfs_file_id ? `/api/documents/${encodeURIComponent(documentId)}/pdf` : undefined;
 
     res.json({
@@ -464,6 +464,7 @@ router.get('/documents/:documentId', async (req: Request, res: Response) => {
       document: {
         ...doc,
         has_pdf: hasPdf,
+        has_source_url: Boolean(doc.source_url),
         has_text_preview: Boolean(previewText),
         file_url: fileUrl,
         preview_text: previewText,
@@ -546,4 +547,3 @@ router.delete('/analyses/:id', async (req: Request, res: Response) => {
 });
 
 export default router;
-

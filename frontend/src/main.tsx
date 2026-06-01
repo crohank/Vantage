@@ -1,10 +1,9 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
-import 'bootstrap/dist/css/bootstrap.min.css'
-import './theme.css'
+import { ThemeProvider } from './context/ThemeContext'
+import './styles/globals.css'
 
-// Check if root element exists
 const rootElement = document.getElementById('root')
 if (!rootElement) {
   throw new Error('Root element not found')
@@ -12,6 +11,8 @@ if (!rootElement) {
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <App />
-  </React.StrictMode>,
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
+  </React.StrictMode>
 )
