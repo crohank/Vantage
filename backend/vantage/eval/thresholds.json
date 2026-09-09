@@ -1,0 +1,6 @@
+{
+  "min_precision": 0.909,
+  "min_recall": 0.84,
+  "min_classification_accuracy": 0.913,
+  "min_citation_validity": 1.0
+}

@@ -13,6 +13,7 @@ which is what lets the CI gate be both cheap and meaningful.
 from __future__ import annotations
 
 import re
+from collections import Counter
 from difflib import SequenceMatcher
 
 from vantage.domain.filing import FilingSection, SectionId, Span
@@ -152,7 +153,21 @@ def diff_sections(
     old = split_paragraphs(prior)
     new = split_paragraphs(current)
 
-    changes: list[DetectedChange] = []
+    # Moves are resolved first. A paragraph that moved is deleted at its old
+    # position and inserted at its new one, so the opcode walk would also
+    # report it as a REMOVED plus an ADDED. Reporting one edit three times
+    # inflates the feed and, in evaluation, showed up as zero correctly
+    # classified moves: the spurious ADDED consumed the match and the real
+    # MOVED scored as a false positive.
+    moves = _find_moves(prior, current, old, new)
+    moved_keys = {
+        p.key
+        for p in old
+        for m in moves
+        if m.prior_span is not None and m.prior_span.start == p.start
+    }
+
+    changes: list[DetectedChange] = list(moves)
     matcher = SequenceMatcher(None, [p.key for p in old], [p.key for p in new], autojunk=False)
 
     for tag, i1, i2, j1, j2 in matcher.get_opcodes():
@@ -164,8 +179,8 @@ def diff_sections(
             if include_cosmetic:
                 changes.extend(_cosmetic_pairs(prior, current, old[i1:i2], new[j1:j2]))
             continue
-        removed = [p for p in old[i1:i2] if p.substantive]
-        added = [p for p in new[j1:j2] if p.substantive]
+        removed = [p for p in old[i1:i2] if p.substantive and p.key not in moved_keys]
+        added = [p for p in new[j1:j2] if p.substantive and p.key not in moved_keys]
         if tag == "replace":
             changes.extend(_pair_replacements(prior, current, removed, added, include_cosmetic))
         elif tag == "delete":
@@ -173,7 +188,6 @@ def diff_sections(
         elif tag == "insert":
             changes.extend(_as_additions(current, added))
 
-    changes.extend(_find_moves(prior, current, old, new))
     changes.sort(key=lambda c: c.current_span.start if c.current_span else -1)
     return changes
 
@@ -291,18 +305,28 @@ def _find_moves(
     the risk they now consider most pressing toward the front.
     """
     old_substantive = [p for p in old if p.substantive]
-    old_by_key: dict[str, Paragraph] = {}
-    for p in old_substantive:
-        old_by_key.setdefault(p.key, p)
-    old_rank = {p.key: i for i, p in enumerate(old_substantive)}
-
     new_substantive = [p for p in new if p.substantive]
+
+    # A move is only identifiable when the paragraph is unique on both sides.
+    # Filings repeat boilerplate, and once a key appears twice there is no
+    # way to say which copy moved where. Left in, ambiguous keys make every
+    # later paragraph look displaced: a section of near-identical paragraphs
+    # reported 36 moves where one had occurred.
+    old_counts = Counter(p.key for p in old_substantive)
+    new_counts = Counter(p.key for p in new_substantive)
+    unique = {k for k, n in old_counts.items() if n == 1 and new_counts.get(k) == 1}
+
+    old_rank = {p.key: i for i, p in enumerate(old_substantive)}
+    old_by_key = {p.key: p for p in old_substantive}
+
     # A shift of a few positions is fallout from neighbouring edits. A tenth
     # of the section is an editorial decision.
     threshold = max(3, len(new_substantive) // 10)
 
     moves: list[DetectedChange] = []
     for new_rank, p in enumerate(new_substantive):
+        if p.key not in unique:
+            continue
         before = old_rank.get(p.key)
         if before is None or abs(before - new_rank) < threshold:
             continue
