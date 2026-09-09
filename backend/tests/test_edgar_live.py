@@ -52,7 +52,7 @@ async def test_real_ten_k_parses_into_canonical_sections(ticker: str) -> None:
         raw = await ec.fetch_document(filings[0].primary_doc_url)
 
     sections = {s.section_id: s for s in extract_sections(filings[0], raw)}
-    assert _EXPECTED <= sections.keys(), f"missing {_EXPECTED - sections.keys()}"
+    assert sections.keys() >= _EXPECTED, f"missing {_EXPECTED - sections.keys()}"
 
     # The previous pipeline truncated every section to 5,000 characters, which
     # is roughly a fifteenth of a real Item 1A and made diffing pointless.

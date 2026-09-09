@@ -4,6 +4,8 @@ The span invariant is the one that matters: a finding whose span does not
 resolve to its exact quoted text is a bug, and CI must be able to say so.
 """
 
+import datetime as dt
+
 import pytest
 from pydantic import ValidationError
 
@@ -17,8 +19,6 @@ from vantage.domain.filing import (
     normalize_accession,
     normalize_cik,
 )
-
-import datetime as dt
 
 SECTION = FilingSection(
     accession="0000320193-24-000123",

@@ -10,7 +10,7 @@ os.environ.setdefault("MONGODB_URI", "mongodb://testhost/vantage_test")
 os.environ.setdefault("SEC_EDGAR_USER_AGENT", "Vantage Test tests@vantage.invalid")
 os.environ.setdefault("VANTAGE_GIT_SHA", "test")
 
-import pytest  # noqa: E402
+import pytest
 
 
 @pytest.fixture

@@ -61,6 +61,7 @@ dev = [
     "scipy>=1.14",
     "scikit-learn>=1.5",
     "lxml-stubs>=0.5.1",
+    "respx>=0.23.1",
 ]
 
 [build-system]
