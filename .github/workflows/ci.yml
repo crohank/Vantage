@@ -42,11 +42,10 @@ jobs:
       - name: No em or en dashes in source
         # Project rule: the app's font stack has no glyph for them, so they
         # render as a tofu box wherever this text reaches a user.
-        run: |
-          if grep -rInP '[\x{2013}\x{2014}]' vantage tests; then
-            echo "::error::em or en dash found, use a comma, a period or parentheses"
-            exit 1
-          fi
+        # Python rather than grep: not every grep build accepts a unicode
+        # escape above U+00FF, and a grep that errors exits non-zero, which
+        # an "if" reads as no-match and passes the step silently.
+        run: uv run python ../scripts/check_dashes.py vantage tests
 
       - name: Unit tests
         # Network and LLM-judge suites are excluded by the marker config in

@@ -165,6 +165,12 @@ def poisson_baseline(total: int, days: int) -> tuple[float, float]:
     at any sane quota cost. Counts of independent arrivals are Poisson, where
     the variance equals the mean, which is the least assuming estimate
     available from a single number.
+
+    It does understate the spread. Real chatter is bursty and clusters on
+    weekdays and news events, so the true daily variance runs above the mean
+    and any z-score derived from this path is larger in magnitude than one
+    measured from actual daily counts. Prefer `summarize_timestamps` wherever
+    the provider will hand over timestamps.
     """
     mean = total / days if days > 0 else 0.0
     return mean, math.sqrt(mean)

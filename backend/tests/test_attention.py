@@ -619,3 +619,18 @@ async def test_hackernews_live_reading() -> None:
     # Apple is discussed on HN every single day, so a zero baseline would mean
     # the query or the response shape changed.
     assert signal.baseline_daily_mean > 0.0
+
+
+@pytest.mark.live
+async def test_hackernews_live_megacap_still_has_a_baseline() -> None:
+    """A ticker loud enough to truncate the enumerated page.
+
+    NVIDIA returned 16,487 hits over 90 days against a 1000 hit page cap, so
+    this exercises the count-only fallback. Before it existed the returned
+    hits all landed inside the window and the z-score collapsed to 0.0.
+    """
+    async with HackerNewsSource(_settings()) as source:
+        signal = await source.fetch("NVDA", "NVIDIA CORP", 7)
+    assert signal.available, signal.error
+    assert signal.mention_count > 0
+    assert signal.baseline_daily_stdev > 0.0
