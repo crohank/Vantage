@@ -47,9 +47,10 @@ class BlueskySource(AttentionSource):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        # Created on first use so it binds to the running loop rather than to
-        # whichever loop happened to import this module.
+        # Both created on first use so they bind to the running loop rather
+        # than to whichever loop happened to import this module.
         self._login_lock: asyncio.Lock | None = None
+        self._bsky: Any = None
 
     @property
     def name(self) -> AttentionSourceName:
@@ -59,12 +60,20 @@ class BlueskySource(AttentionSource):
         return bool(self.settings.bluesky_handle and self.settings.bluesky_app_password)
 
     async def _client(self) -> Any:
-        """Logged in AsyncClient.
+        """Logged in AsyncClient, built once per source instance.
 
         atproto ships a native AsyncClient whose `search_posts` is a real
         coroutine, so there is no thread to hand this off to.
+
+        Held rather than rebuilt because AsyncClient owns an httpx pool it
+        exposes no way to close. Constructing one per fetch would leak a pool
+        each time.
         """
         global _session_string
+
+        existing = self._bsky
+        if existing is not None:
+            return existing
 
         # Imported here, not at module scope, so a missing or broken atproto
         # degrades this one source instead of breaking the whole package.
@@ -78,10 +87,16 @@ class BlueskySource(AttentionSource):
         secret = password.get_secret_value() if password is not None else ""
 
         async with self._login_lock:
+            # Re-read: a concurrent fetch may have logged in while this one
+            # waited for the lock.
+            raced = self._bsky
+            if raced is not None:
+                return raced
             client = AsyncClient()
             if _session_string is not None:
                 try:
                     await client.login(session_string=_session_string)
+                    self._bsky = client
                     return client
                 except Exception as exc:
                     log.info("bluesky session replay failed, logging in fresh: %s", exc)
@@ -89,6 +104,7 @@ class BlueskySource(AttentionSource):
                     client = AsyncClient()
             await client.login(handle, secret)
             _session_string = str(client.export_session_string())
+            self._bsky = client
             return client
 
     async def _collect(self, ticker: str, company_name: str, window_days: int) -> AttentionSignal:
@@ -101,31 +117,37 @@ class BlueskySource(AttentionSource):
         seen: dict[str, datetime] = {}
         truncated = False
 
-        for term in query_terms(ticker, company_name):
-            cursor: str | None = None
-            for _ in range(_MAX_PAGES):
-                await _limiter.acquire()
-                params: dict[str, Any] = {
-                    "q": term,
-                    "limit": _PAGE_SIZE,
-                    "since": since.isoformat().replace("+00:00", "Z"),
-                    "sort": "latest",
-                }
-                if cursor:
-                    params["cursor"] = cursor
-                response = await client.app.bsky.feed.search_posts(params)
+        try:
+            for term in query_terms(ticker, company_name):
+                cursor: str | None = None
+                for _ in range(_MAX_PAGES):
+                    await _limiter.acquire()
+                    params: dict[str, Any] = {
+                        "q": term,
+                        "limit": _PAGE_SIZE,
+                        "since": since.isoformat().replace("+00:00", "Z"),
+                        "sort": "latest",
+                    }
+                    if cursor:
+                        params["cursor"] = cursor
+                    response = await client.app.bsky.feed.search_posts(params)
 
-                for post in response.posts or []:
-                    self._record(post, now, seen)
+                    for post in response.posts or []:
+                        self._record(post, now, seen)
 
-                cursor = getattr(response, "cursor", None)
-                if not cursor:
-                    break
-            else:
-                # Left the loop with a cursor still outstanding, so older posts
-                # exist that were never read.
-                if cursor:
-                    truncated = True
+                    cursor = getattr(response, "cursor", None)
+                    if not cursor:
+                        break
+                else:
+                    # Left the loop with a cursor still outstanding, so older
+                    # posts exist that were never read.
+                    if cursor:
+                        truncated = True
+        except Exception:
+            # Drop the held client so the next attempt logs in again, rather
+            # than replaying a session the server has already rejected.
+            self._bsky = None
+            raise
 
         baseline = summarize_timestamps(
             list(seen.values()),

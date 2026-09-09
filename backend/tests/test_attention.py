@@ -18,6 +18,7 @@ from __future__ import annotations
 import math
 from datetime import UTC, datetime, timedelta
 from email.utils import format_datetime
+from types import SimpleNamespace
 from typing import Any
 
 import httpx
@@ -26,7 +27,7 @@ import respx
 from pydantic import SecretStr
 from tenacity import wait_none
 
-from vantage.attention import hackernews, news
+from vantage.attention import bluesky, hackernews, news, reddit
 from vantage.attention.base import (
     AttentionSource,
     Baseline,
@@ -39,8 +40,10 @@ from vantage.attention.base import (
     query_terms,
     summarize_timestamps,
 )
+from vantage.attention.bluesky import BlueskySource
 from vantage.attention.hackernews import SEARCH_URL, HackerNewsSource
 from vantage.attention.news import FINNHUB_URL, GOOGLE_NEWS_URL, MARKETAUX_URL, NewsSource
+from vantage.attention.reddit import SUBREDDITS, RedditSource
 from vantage.attention.score import build_gap, score_attention
 from vantage.config import Settings
 from vantage.domain.attention import (
@@ -86,6 +89,8 @@ def _no_waiting(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     unthrottled = RateLimiter(rate_per_second=10_000.0)
     monkeypatch.setattr(hackernews, "_limiter", unthrottled)
+    monkeypatch.setattr(bluesky, "_limiter", unthrottled)
+    monkeypatch.setattr(reddit, "_limiter", unthrottled)
     for attr in ("_finnhub_limiter", "_marketaux_limiter", "_google_news_limiter"):
         monkeypatch.setattr(news, attr, unthrottled)
     monkeypatch.setattr(http_get.retry, "wait", wait_none())
@@ -518,6 +523,154 @@ class TestNews:
             Sentiment.NEUTRAL: 1,
         }
         assert signal.net_sentiment == pytest.approx(0.0)
+
+
+class _FakeSearchResponse:
+    def __init__(self, posts: list[Any], cursor: str | None = None) -> None:
+        self.posts = posts
+        self.cursor = cursor
+
+
+class _FakeBsky:
+    """Stands in for a logged in atproto AsyncClient."""
+
+    def __init__(self, pages: list[_FakeSearchResponse], boom: Exception | None = None) -> None:
+        self._pages = list(pages)
+        self._boom = boom
+        self.calls = 0
+        self.app = SimpleNamespace(bsky=SimpleNamespace(feed=self))
+
+    async def search_posts(self, params: dict[str, Any]) -> _FakeSearchResponse:
+        self.calls += 1
+        if self._boom is not None:
+            raise self._boom
+        return self._pages.pop(0) if self._pages else _FakeSearchResponse([])
+
+
+def _bsky_post(uri: str, days_ago: float) -> Any:
+    stamp = (datetime.now(UTC) - timedelta(days=days_ago)).isoformat().replace("+00:00", "Z")
+    return SimpleNamespace(uri=uri, record=SimpleNamespace(created_at=stamp), indexed_at=stamp)
+
+
+class TestBluesky:
+    def test_absent_credentials_read_as_unconfigured(self) -> None:
+        assert not BlueskySource(_settings()).is_configured()
+        assert BlueskySource(
+            _settings(bluesky_handle="me.bsky.social", bluesky_app_password=SecretStr("pw"))
+        ).is_configured()
+
+    async def test_counts_posts_and_deduplicates_across_terms(self) -> None:
+        source = BlueskySource(
+            _settings(bluesky_handle="me.bsky.social", bluesky_app_password=SecretStr("pw"))
+        )
+        # Both search terms return the same two posts plus one baseline post.
+        page = [_bsky_post("at://a", 1), _bsky_post("at://b", 2), _bsky_post("at://c", 40)]
+        fake = _FakeBsky([_FakeSearchResponse(page), _FakeSearchResponse(page)])
+        source._bsky = fake
+
+        signal = await source.fetch("AAPL", "Apple Inc.", 7)
+
+        assert fake.calls == 2
+        assert signal.available
+        assert signal.mention_count == 2
+        assert signal.sentiment_counts == {}
+
+    async def test_a_failed_search_drops_the_held_session(self) -> None:
+        source = BlueskySource(
+            _settings(bluesky_handle="me.bsky.social", bluesky_app_password=SecretStr("pw"))
+        )
+        source._bsky = _FakeBsky([], boom=RuntimeError("ExpiredToken"))
+
+        signal = await source.fetch("AAPL", "Apple Inc.", 7)
+
+        assert not signal.available
+        assert signal.error is not None
+        assert "ExpiredToken" in signal.error
+        # Otherwise the next call replays a session the server already refused.
+        assert source._bsky is None
+
+    async def test_a_future_dated_post_is_ignored(self) -> None:
+        # record.createdAt is whatever the posting client wrote.
+        source = BlueskySource(
+            _settings(bluesky_handle="me.bsky.social", bluesky_app_password=SecretStr("pw"))
+        )
+        source._bsky = _FakeBsky(
+            [_FakeSearchResponse([_bsky_post("at://a", 1), _bsky_post("at://spoof", -400)])]
+        )
+
+        signal = await source.fetch("XYZQ", "", 7)
+
+        assert signal.mention_count == 1
+
+
+class _FakeSubreddit:
+    def __init__(self, submissions: list[Any]) -> None:
+        self._submissions = submissions
+
+    def search(self, term: str, *, sort: str, time_filter: str, limit: int) -> Any:
+        return iter(self._submissions)
+
+
+class _FakeReddit:
+    def __init__(self, submissions: list[Any]) -> None:
+        self._submissions = submissions
+        self.requested: list[str] = []
+
+    def subreddit(self, name: str) -> _FakeSubreddit:
+        self.requested.append(name)
+        return _FakeSubreddit(self._submissions)
+
+
+def _submission(sid: str, days_ago: float) -> Any:
+    return SimpleNamespace(
+        id=sid, created_utc=(datetime.now(UTC) - timedelta(days=days_ago)).timestamp()
+    )
+
+
+class TestReddit:
+    def test_absent_credentials_read_as_unconfigured(self) -> None:
+        assert not RedditSource(_settings()).is_configured()
+
+    async def test_searches_one_multireddit_and_deduplicates(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        source = RedditSource(
+            _settings(
+                reddit_client_id=SecretStr("id"),
+                reddit_client_secret=SecretStr("secret"),
+            )
+        )
+        fake = _FakeReddit([_submission("p1", 1), _submission("p2", 3), _submission("p3", 45)])
+        monkeypatch.setattr(source, "_reddit", lambda: fake)
+
+        signal = await source.fetch("AAPL", "Apple Inc.", 7)
+
+        assert signal.available
+        # Two terms, same submissions, counted once each.
+        assert signal.mention_count == 2
+        # One multireddit query rather than four separate ones.
+        assert fake.requested == ["+".join(SUBREDDITS)] * 2
+
+    async def test_a_praw_failure_stays_an_error_signal(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Reddit is never load bearing, so a refused key must not raise.
+        source = RedditSource(
+            _settings(
+                reddit_client_id=SecretStr("id"),
+                reddit_client_secret=SecretStr("secret"),
+            )
+        )
+
+        def boom() -> Any:
+            raise RuntimeError("401 received from reddit")
+
+        monkeypatch.setattr(source, "_reddit", boom)
+        signal = await source.fetch("AAPL", "Apple Inc.", 7)
+
+        assert not signal.available
+        assert signal.error is not None
+        assert "401" in signal.error
 
 
 class TestScoreAttention:
