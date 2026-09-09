@@ -29,6 +29,14 @@ ENV/
 # Environment variables
 .env
 .env.local
+.env.production
+.env.*.local
+
+# Uploaded files (multer dest). A real user PDF was committed from here.
+backend/tmp_uploads/
+
+# Claude Code scratch worktrees
+.claude/worktrees/
 
 # IDE
 .vscode/
