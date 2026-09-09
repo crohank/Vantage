@@ -290,7 +290,8 @@ class EdgarClient:
         start: date | None = None,
         end: date | None = None,
         ciks: list[str] | None = None,
-        limit: int = 10,
+        limit: int = 100,
+        offset: int = 0,
     ) -> FullTextResult:
         """Exact-phrase search across all filings, 2001 to present.
 
@@ -308,7 +309,11 @@ class EdgarClient:
             params["startdt"] = start.isoformat()
             params["enddt"] = end.isoformat()
         if ciks:
+            # Must be zero-padded to 10 digits. A bare "320193" silently
+            # matches nothing rather than erroring.
             params["ciks"] = ",".join(normalize_cik(c) for c in ciks)
+        if offset:
+            params["from"] = offset
 
         resp = await self._get(EFTS_SEARCH, params=params)
         if resp.status_code != 200:
@@ -322,7 +327,12 @@ class EdgarClient:
             hit = FullTextHit.from_efts(raw)
             if hit is not None:
                 hits.append(hit)
-        return FullTextResult(phrase=phrase, total=total, hits=hits)
+        return FullTextResult(
+            phrase=phrase,
+            total=total,
+            hits=hits,
+            aggregations=_decode_aggregations(payload.get("aggregations", {})),
+        )
 
     # ----------------------------------------------------------------- XBRL
 
@@ -426,14 +436,33 @@ class FullTextHit:
 
 
 class FullTextResult:
-    __slots__ = ("hits", "phrase", "total")
+    __slots__ = ("aggregations", "hits", "phrase", "total")
 
-    def __init__(self, phrase: str, total: int, hits: list[FullTextHit]) -> None:
+    def __init__(
+        self,
+        phrase: str,
+        total: int,
+        hits: list[FullTextHit],
+        aggregations: dict[str, dict[str, int]] | None = None,
+    ) -> None:
         self.phrase = phrase
-        # Corpus-wide match count, independent of how many hits were returned.
-        # The novelty engine reads this, not len(hits).
+        # Corpus-wide match count, independent of how many hits came back.
+        # The novelty engine reads this, not len(hits). Elasticsearch caps the
+        # reported total at 10,000 even when the aggregations count more.
         self.total = total
         self.hits = hits
+        # Facet counts over the full match set rather than this page:
+        # sic_filter, entity_filter, form_filter, biz_states_filter. There is
+        # no server-side SIC request parameter (sic=, sics= and SIC= are all
+        # accepted and ignored), so this aggregation is the only way to slice
+        # results by industry.
+        self.aggregations = aggregations or {}
+
+    def sic_counts(self) -> dict[str, int]:
+        return self.aggregations.get("sic_filter", {})
+
+    def entity_counts(self) -> dict[str, int]:
+        return self.aggregations.get("entity_filter", {})
 
     @property
     def earliest(self) -> FullTextHit | None:
@@ -441,3 +470,17 @@ class FullTextResult:
 
     def __repr__(self) -> str:
         return f"FullTextResult({self.phrase!r}, total={self.total}, returned={len(self.hits)})"
+
+
+def _decode_aggregations(raw: dict[str, Any]) -> dict[str, dict[str, int]]:
+    out: dict[str, dict[str, int]] = {}
+    for name, body in raw.items():
+        buckets = body.get("buckets") if isinstance(body, dict) else None
+        if not isinstance(buckets, list):
+            continue
+        out[name] = {
+            str(b.get("key")): int(b.get("doc_count", 0))
+            for b in buckets
+            if isinstance(b, dict) and b.get("key") is not None
+        }
+    return out
