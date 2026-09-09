@@ -17,3 +17,7 @@ Thumbs.db
 .vscode/
 .idea/
 
+
+# uv / local env
+.venv/
+.cache/
