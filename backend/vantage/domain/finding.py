@@ -16,7 +16,7 @@ import hashlib
 from datetime import UTC, datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
 
 from vantage.domain.filing import FilingSection, SectionId, Span
 
@@ -57,6 +57,7 @@ class Materiality(BaseModel):
     score: float = Field(ge=0.0, le=1.0)
     reasons: list[str] = Field(default_factory=list)
 
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def band(self) -> str:
         if self.score >= 0.7:

@@ -119,6 +119,7 @@ class AttentionScore(BaseModel):
             return 0.0
         return sum(s.net_sentiment for s in live) / len(live)
 
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def is_degraded(self) -> bool:
         """True when some configured source failed, so the score understates."""

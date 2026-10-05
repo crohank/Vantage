@@ -13,7 +13,7 @@ import re
 from datetime import date, datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, computed_field, model_validator
 
 
 class Form(StrEnum):
@@ -84,6 +84,7 @@ class Filing(BaseModel):
         object.__setattr__(self, "ticker", self.ticker.upper())
         return self
 
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def fiscal_label(self) -> str:
         """Human label used to describe which filing a finding came from."""
