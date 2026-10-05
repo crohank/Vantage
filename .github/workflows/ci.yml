@@ -103,21 +103,57 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-  frontend:
-    name: frontend build
+  # The frontend's types are generated from the backend's OpenAPI schema, so
+  # this job also proves the two have not drifted: it regenerates them and
+  # fails if the committed output differs.
+  web:
+    name: frontend types and build
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
-      # The deploy runs a bare `vite build`, which does not typecheck, so a
-      # type error would otherwise reach production unnoticed.
-      - run: npx tsc --noEmit
-      - run: npm run build
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install backend
+        working-directory: backend
+        run: uv sync --frozen
+
+      - name: Export the OpenAPI schema
+        working-directory: backend
+        run: |
+          uv run python -c "
+          import json, pathlib
+          from vantage.api.app import app
+          pathlib.Path('../frontend/src/api/openapi.json').write_text(
+              json.dumps(app.openapi(), indent=2), encoding='utf-8')
+          "
+
+      - name: Install frontend
+        run: npm ci
+
+      - name: Regenerate types
+        run: npm run gen:api
+
+      - name: Fail if the committed types are stale
+        run: |
+          if ! git diff --quiet -- src/api; then
+            echo "The API schema changed but the generated client was not committed."
+            echo "Run: cd frontend && npm run gen:api"
+            git --no-pager diff --stat -- src/api
+            exit 1
+          fi
+
+      - name: Typecheck and build
+        run: npm run build
