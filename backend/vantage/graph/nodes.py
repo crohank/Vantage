@@ -24,6 +24,7 @@ from vantage.config import get_settings
 from vantage.domain.filing import FilingPair, Form, SectionId
 from vantage.domain.finding import Finding, FindingKind, Materiality, Provenance
 from vantage.engines.diff import diff_sections, score_materiality
+from vantage.engines.explain import explain
 from vantage.engines.novelty import find_novel_phrases
 from vantage.engines.peer import peer_adoption
 from vantage.graph.state import AnalysisState, NodeTiming, RequestKind
@@ -439,4 +440,32 @@ async def finalize(state: AnalysisState) -> dict[str, Any]:
         "final_findings": kept,
         "errors": rejected,
         "timings": _timed("finalize", started),
+    }
+
+
+async def explain_findings(state: AnalysisState) -> dict[str, Any]:
+    """Describe the most material findings in plain language.
+
+    Runs after verification, so the model only ever sees spans that already
+    resolve against the stored filing text. Skipped entirely when no provider
+    is configured, which keeps the pipeline fully usable without an API key.
+    """
+    started = time.monotonic()
+    findings = state.get("final_findings", [])
+    if not findings:
+        return {"timings": _timed("explain_findings", started)}
+
+    from vantage.llm.gateway import LLMGateway, Provider
+
+    async with LLMGateway() as gateway:
+        if not gateway.is_configured(Provider.GEMINI) and not gateway.is_configured(Provider.GROQ):
+            return {
+                "errors": ["no LLM provider configured, findings are unexplained"],
+                "timings": _timed("explain_findings", started),
+            }
+        explained = await explain(gateway, findings)
+
+    return {
+        "final_findings": explained,
+        "timings": _timed("explain_findings", started),
     }

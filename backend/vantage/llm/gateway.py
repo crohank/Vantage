@@ -158,9 +158,14 @@ class LLMGateway:
         return self._client
 
     def is_configured(self, provider: Provider) -> bool:
-        if provider is Provider.GEMINI:
-            return self._settings.gemini_api_key is not None
-        return self._settings.groq_api_key is not None
+        key = (
+            self._settings.gemini_api_key
+            if provider is Provider.GEMINI
+            else self._settings.groq_api_key
+        )
+        # An unset variable parses to SecretStr("") rather than None, so the
+        # emptiness has to be checked rather than the presence.
+        return key is not None and bool(key.get_secret_value().strip())
 
     async def complete(
         self,
@@ -204,7 +209,19 @@ class LLMGateway:
                 agent=agent,
             )
 
-    async def _complete_on(
+    async def _complete_on(self, *args: Any, **kwargs: Any) -> LLMResponse:
+        """Dispatch, mapping transport failures onto the gateway's own errors.
+
+        httpx raises ConnectError, TimeoutException and LocalProtocolError,
+        none of which are LLMError, so without this a caller that handles
+        LLMError correctly still dies on a dropped connection.
+        """
+        try:
+            return await self._complete_on_inner(*args, **kwargs)
+        except httpx.HTTPError as exc:
+            raise LLMUnavailable(f"{type(exc).__name__}: {exc}") from exc
+
+    async def _complete_on_inner(
         self,
         provider: Provider,
         prompt: str,

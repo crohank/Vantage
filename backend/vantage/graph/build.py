@@ -31,6 +31,7 @@ from langgraph.types import RetryPolicy
 
 from vantage.config import get_settings
 from vantage.graph.nodes import (
+    explain_findings,
     finalize,
     ingest_filings,
     measure_attention,
@@ -67,6 +68,7 @@ def build_graph() -> StateGraph[AnalysisState, None, AnalysisState, AnalysisStat
     workflow.add_node("run_peer", run_peer, retry_policy=_NETWORK_RETRY)
     workflow.add_node("measure_attention", measure_attention)
     workflow.add_node("finalize", finalize)
+    workflow.add_node("explain_findings", explain_findings)
 
     workflow.add_edge(START, "resolve_company")
     workflow.add_edge("resolve_company", "ingest_filings")
@@ -83,7 +85,8 @@ def build_graph() -> StateGraph[AnalysisState, None, AnalysisState, AnalysisStat
     workflow.add_conditional_edges("run_novelty", needs_peer, ["run_peer", "finalize"])
     workflow.add_edge("run_peer", "finalize")
     workflow.add_edge("measure_attention", "finalize")
-    workflow.add_edge("finalize", END)
+    workflow.add_edge("finalize", "explain_findings")
+    workflow.add_edge("explain_findings", END)
 
     return workflow
 

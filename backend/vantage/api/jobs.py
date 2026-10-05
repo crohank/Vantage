@@ -46,6 +46,7 @@ NODE_NAMES = frozenset(
         "run_peer",
         "measure_attention",
         "finalize",
+        "explain_findings",
     }
 )
 
