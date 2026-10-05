@@ -33,13 +33,19 @@ from vantage.api.schemas import (
     HealthOut,
     JobRef,
     JobSummary,
+    NewFilingOut,
     NodeTimingOut,
+    PollerStatusOut,
     SectionOut,
     SpanOut,
+    WatchedOut,
+    WatchRequest,
 )
 from vantage.config import get_settings
 from vantage.domain.finding import Finding
 from vantage.graph.build import get_graph
+from vantage.watchlist.poller import NewFiling, get_poller
+from vantage.watchlist.store import WatchedCompany, get_store
 
 log = logging.getLogger(__name__)
 
@@ -263,3 +269,75 @@ async def get_section(job_id: str, accession: str, section_id: str, _: None = Au
         text=section.text,
         char_length=len(section.text),
     )
+
+
+def _watched_out(entry: WatchedCompany) -> WatchedOut:
+    return WatchedOut(
+        ticker=entry.ticker,
+        cik=entry.cik,
+        forms=entry.forms,
+        added_at=entry.added_at,
+        last_seen=entry.last_seen,
+        last_checked_at=entry.last_checked_at,
+    )
+
+
+def _new_filing_out(item: NewFiling) -> NewFilingOut:
+    return NewFilingOut(
+        ticker=item.ticker,
+        cik=item.cik,
+        accession=item.entry.accession,
+        form=item.entry.form,
+        filed=item.entry.filed,
+        title=item.entry.title,
+        link=item.entry.link,
+    )
+
+
+@app.get("/watchlist", response_model=list[WatchedOut], tags=["watchlist"])
+async def list_watchlist(_: None = Authed) -> list[WatchedOut]:
+    store = await get_store()
+    return [_watched_out(e) for e in await store.list()]
+
+
+@app.post("/watchlist", response_model=WatchedOut, status_code=201, tags=["watchlist"])
+async def add_to_watchlist(body: WatchRequest, _: None = Authed) -> WatchedOut:
+    """Watch a ticker.
+
+    The first sweep records the newest filing as a baseline without alerting,
+    so adding a ticker does not immediately report its whole history.
+    """
+    store = await get_store()
+    existing = await store.get(body.ticker)
+    entry = existing or WatchedCompany(ticker=body.ticker, forms=body.forms)
+    if existing:
+        entry = entry.model_copy(update={"forms": body.forms})
+    await store.put(entry)
+    return _watched_out(entry)
+
+
+@app.delete("/watchlist/{ticker}", status_code=204, tags=["watchlist"])
+async def remove_from_watchlist(ticker: str, _: None = Authed) -> None:
+    store = await get_store()
+    if not await store.remove(ticker):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"{ticker.upper()} is not watched")
+
+
+@app.get("/watchlist/poller", response_model=PollerStatusOut, tags=["watchlist"])
+async def poller_status(_: None = Authed) -> PollerStatusOut:
+    poller = get_poller()
+    return PollerStatusOut(
+        running=poller.running,
+        interval_seconds=poller.interval,
+        last_sweep_at=poller.last_sweep_at,
+        last_error=poller.last_error,
+        pending=[_new_filing_out(f) for f in poller.pending],
+    )
+
+
+@app.post("/watchlist/poller/sweep", response_model=list[NewFilingOut], tags=["watchlist"])
+@limiter.limit("6/minute")
+async def sweep_now(request: Request, _: None = Authed) -> list[NewFilingOut]:
+    """Run one sweep immediately, rather than waiting for the interval."""
+    found = await get_poller().run_once()
+    return [_new_filing_out(f) for f in found]

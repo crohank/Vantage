@@ -10,7 +10,7 @@ timing and telemetry.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -153,3 +153,42 @@ class HealthOut(ResponseModel):
     git_sha: str
     checkpointer: str
     attention_sources: list[str]
+
+
+class WatchRequest(BaseModel):
+    ticker: str = Field(pattern=TICKER_PATTERN)
+    forms: list[str] = Field(default_factory=lambda: ["10-K", "10-Q", "8-K"])
+
+    @field_validator("ticker")
+    @classmethod
+    def _upper_ticker(cls, v: str) -> str:
+        return v.upper()
+
+
+class WatchedOut(ResponseModel):
+    ticker: str
+    cik: str | None = None
+    forms: list[str]
+    added_at: datetime
+    last_seen: dict[str, str] = Field(default_factory=dict)
+    last_checked_at: datetime | None = None
+
+
+class NewFilingOut(ResponseModel):
+    """A filing the poller saw that the watcher has not been told about."""
+
+    ticker: str
+    cik: str
+    accession: str
+    form: str
+    filed: date
+    title: str
+    link: str
+
+
+class PollerStatusOut(ResponseModel):
+    running: bool
+    interval_seconds: int
+    last_sweep_at: datetime | None = None
+    last_error: str | None = None
+    pending: list[NewFilingOut] = Field(default_factory=list)

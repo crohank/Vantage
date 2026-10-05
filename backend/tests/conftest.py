@@ -12,6 +12,8 @@ os.environ.setdefault("VANTAGE_GIT_SHA", "test")
 
 import pytest
 
+from vantage.config import get_settings
+
 
 @pytest.fixture
 def ten_k_html() -> bytes:
@@ -47,3 +49,16 @@ def ten_k_html() -> bytes:
       <div><span>Item 2 &#8211; Properties</span></div>
       <div>We lease offices.</div>
     </body></html>"""
+
+
+@pytest.fixture(autouse=True)
+def _no_real_mongo(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep the offline suite off any cluster a local .env happens to name.
+
+    Without this, every call that resolves a store or a checkpointer tries
+    the real URI and waits out the connection timeout.
+    """
+    monkeypatch.setenv("MONGODB_URI", "")
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()

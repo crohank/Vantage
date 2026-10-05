@@ -46,6 +46,8 @@ from vantage.graph.state import AnalysisState
 
 log = logging.getLogger(__name__)
 
+MONGO_TIMEOUT_MS = 3000
+
 # EDGAR is rate limited and occasionally answers 503. The client already
 # retries individual requests; this covers a node failing as a whole.
 _NETWORK_RETRY = RetryPolicy(max_attempts=3, initial_interval=1.0, backoff_factor=2.0)
@@ -107,7 +109,14 @@ async def make_checkpointer() -> Any:
         from langgraph.checkpoint.mongodb import MongoDBSaver
         from pymongo import AsyncMongoClient
 
-        client: Any = AsyncMongoClient(uri)
+        # Fail fast. The default server selection timeout is 30s, and
+        # both callers fall back cleanly, so a slow answer here just
+        # stalls startup or the first request for no benefit.
+        client: Any = AsyncMongoClient(
+            uri,
+            serverSelectionTimeoutMS=MONGO_TIMEOUT_MS,
+            connectTimeoutMS=MONGO_TIMEOUT_MS,
+        )
         await client.admin.command("ping")
         return MongoDBSaver(client, db_name=settings.mongodb_database)
     except Exception as exc:

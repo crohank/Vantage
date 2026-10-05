@@ -110,6 +110,84 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/watchlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Watchlist */
+        get: operations["list_watchlist_watchlist_get"];
+        put?: never;
+        /**
+         * Add To Watchlist
+         * @description Watch a ticker.
+         *
+         *     The first sweep records the newest filing as a baseline without alerting,
+         *     so adding a ticker does not immediately report its whole history.
+         */
+        post: operations["add_to_watchlist_watchlist_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watchlist/{ticker}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove From Watchlist */
+        delete: operations["remove_from_watchlist_watchlist__ticker__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watchlist/poller": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Poller Status */
+        get: operations["poller_status_watchlist_poller_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watchlist/poller/sweep": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sweep Now
+         * @description Run one sweep immediately, rather than waiting for the interval.
+         */
+        post: operations["sweep_now_watchlist_poller_sweep_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -392,12 +470,48 @@ export interface components {
             /** Band */
             readonly band: string;
         };
+        /**
+         * NewFilingOut
+         * @description A filing the poller saw that the watcher has not been told about.
+         */
+        NewFilingOut: {
+            /** Ticker */
+            ticker: string;
+            /** Cik */
+            cik: string;
+            /** Accession */
+            accession: string;
+            /** Form */
+            form: string;
+            /**
+             * Filed
+             * Format: date
+             */
+            filed: string;
+            /** Title */
+            title: string;
+            /** Link */
+            link: string;
+        };
         /** NodeTimingOut */
         NodeTimingOut: {
             /** Node */
             node: string;
             /** Seconds */
             seconds: number;
+        };
+        /** PollerStatusOut */
+        PollerStatusOut: {
+            /** Running */
+            running: boolean;
+            /** Interval Seconds */
+            interval_seconds: number;
+            /** Last Sweep At */
+            last_sweep_at: string | null;
+            /** Last Error */
+            last_error: string | null;
+            /** Pending */
+            pending: components["schemas"]["NewFilingOut"][];
         };
         /**
          * RequestKind
@@ -466,6 +580,33 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** WatchRequest */
+        WatchRequest: {
+            /** Ticker */
+            ticker: string;
+            /** Forms */
+            forms?: string[];
+        };
+        /** WatchedOut */
+        WatchedOut: {
+            /** Ticker */
+            ticker: string;
+            /** Cik */
+            cik: string | null;
+            /** Forms */
+            forms: string[];
+            /**
+             * Added At
+             * Format: date-time
+             */
+            added_at: string;
+            /** Last Seen */
+            last_seen: {
+                [key: string]: string;
+            };
+            /** Last Checked At */
+            last_checked_at: string | null;
         };
     };
     responses: never;
@@ -683,6 +824,165 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SectionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_watchlist_watchlist_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-api-key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchedOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_to_watchlist_watchlist_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-api-key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_from_watchlist_watchlist__ticker__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-api-key"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    poller_status_watchlist_poller_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-api-key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PollerStatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sweep_now_watchlist_poller_sweep_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-api-key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewFilingOut"][];
                 };
             };
             /** @description Validation Error */
