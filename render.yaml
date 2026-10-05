@@ -1,3 +1,7 @@
+# NOTE: the live vantage-backend service was created from the dashboard, not
+# from this file, so Render does not read it. Editing this changes nothing
+# until the service is recreated through the Blueprint flow. Keep the two in
+# step by hand, or recreate from here so this file is the source of truth.
 services:
   - type: web
     name: vantage-api
