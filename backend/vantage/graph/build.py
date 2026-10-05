@@ -67,8 +67,14 @@ def build_graph() -> StateGraph[AnalysisState, None, AnalysisState, AnalysisStat
     workflow.add_node("run_novelty", run_novelty, retry_policy=_NETWORK_RETRY)
     workflow.add_node("run_peer", run_peer, retry_policy=_NETWORK_RETRY)
     workflow.add_node("measure_attention", measure_attention)
-    workflow.add_node("finalize", finalize)
-    workflow.add_node("explain_findings", explain_findings)
+    # Deferred. Two branches reach finalize, the attention branch and the
+    # tail of the diff chain, and they complete in different supersteps. By
+    # default that runs finalize once on a partial set of findings and again
+    # on the full one, which also means explain_findings calls the model
+    # twice and bills for it. defer holds both until every pending task is
+    # done, which is the join this topology needs.
+    workflow.add_node("finalize", finalize, defer=True)
+    workflow.add_node("explain_findings", explain_findings, defer=True)
 
     workflow.add_edge(START, "resolve_company")
     workflow.add_edge("resolve_company", "ingest_filings")

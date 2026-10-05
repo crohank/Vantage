@@ -206,3 +206,20 @@ class TestLiveRun:
         assert final["final_findings"], "a year of Apple filings should differ somewhere"
         # Nothing may be dropped: every emitted span must resolve.
         assert not [e for e in final["errors"] if "dropped finding" in e]
+
+    async def test_the_path_is_correct_for_each_request_kind(self) -> None:
+        # Two branches reach finalize. Without deferral it ran twice, once on
+        # a partial set of findings, and explain_findings billed the model
+        # twice with it.
+        from vantage.eval.trajectory import Trajectory, check_state
+        from vantage.graph.build import RECURSION_LIMIT, get_graph
+
+        graph = await get_graph()
+        for kind in (RequestKind.DIFF, RequestKind.FULL):
+            config = {
+                "configurable": {"thread_id": f"test-traj-{kind.value}"},
+                "recursion_limit": RECURSION_LIMIT,
+            }
+            final = await graph.ainvoke(initial_state("AAPL", kind, max_sections=2), config)
+            assert check_state(kind, final) == [], f"{kind.value} took a wrong path"
+            assert Trajectory.from_state(final).repeated == {}
