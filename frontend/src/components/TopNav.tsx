@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { FileDiff } from 'lucide-react'
+import { BarChart3, FileDiff } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
 import { cn } from '../lib/utils'
 
@@ -21,6 +21,7 @@ function TopNav() {
 
         <nav className="flex items-center gap-1">
           <NavItem to="/findings" icon={<FileDiff size={14} />} label="Findings" />
+          <NavItem to="/metrics" icon={<BarChart3 size={14} />} label="Metrics" />
         </nav>
 
         <div className="ml-auto flex items-center gap-2">

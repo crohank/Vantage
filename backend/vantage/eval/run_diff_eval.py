@@ -156,6 +156,12 @@ def main() -> int:
     parser.add_argument("--refresh", action="store_true", help="download filings first")
     parser.add_argument("--tickers", nargs="*", default=list(DEFAULT_TICKERS))
     parser.add_argument("--write-baseline", action="store_true", help="record current scores")
+    parser.add_argument(
+        "--json",
+        type=Path,
+        default=None,
+        help="also write the scores here, for the metrics dashboard",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.WARNING, format="%(message)s")
@@ -178,6 +184,11 @@ def main() -> int:
         THRESHOLDS_FILE.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
         print(f"\nwrote thresholds to {THRESHOLDS_FILE}")
         return 0
+
+    if args.json:
+        args.json.parent.mkdir(parents=True, exist_ok=True)
+        args.json.write_text(json.dumps(report.as_dict(), indent=2) + chr(10), encoding="utf-8")
+        print(f"wrote scores to {args.json}")
 
     thresholds = Thresholds.load()
     failures: list[str] = []

@@ -15,6 +15,8 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from typing import Any
 
 from vantage.domain.filing import FilingSection
 from vantage.domain.finding import ChangeType, DetectedChange
@@ -105,6 +107,46 @@ class EvalReport:
     @property
     def citation_validity(self) -> float:
         return self.spans_valid / self.spans_checked if self.spans_checked else 1.0
+
+    def as_dict(self) -> dict[str, Any]:
+        """Machine-readable scores, for the metrics dashboard.
+
+        Rendered text is for a human reading CI output; this is the same
+        numbers in a shape the frontend can chart without parsing a table.
+        """
+        return {
+            "generated_at": datetime.now(UTC).isoformat(),
+            "cases": self.cases,
+            "detection": {
+                "precision": round(self.detection.precision, 4),
+                "recall": round(self.detection.recall, 4),
+                "f1": round(self.detection.f1, 4),
+                "true_positives": self.detection.true_positives,
+                "false_positives": self.detection.false_positives,
+                "false_negatives": self.detection.false_negatives,
+            },
+            "classification": {
+                "accuracy": round(self.confusion.accuracy, 4),
+                "per_type": {
+                    expected.value: {"correct": correct, "total": total}
+                    for expected, (correct, total) in sorted(
+                        self.confusion.per_type().items(), key=lambda kv: kv[0].value
+                    )
+                },
+                "matrix": [
+                    {"expected": exp.value, "reported": act.value, "count": n}
+                    for (exp, act), n in sorted(
+                        self.confusion.counts.items(),
+                        key=lambda kv: (kv[0][0].value, kv[0][1].value),
+                    )
+                ],
+            },
+            "citations": {
+                "checked": self.spans_checked,
+                "valid": self.spans_valid,
+                "validity": round(self.citation_validity, 6),
+            },
+        }
 
     def render(self) -> str:
         d = self.detection
