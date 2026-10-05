@@ -226,6 +226,24 @@ class TestStream:
         assert "complete" in seen
         assert seen[-1] == "result"
 
+    async def test_no_event_is_delivered_twice(self, fake_graph: FakeGraph) -> None:
+        # The log and the queue used to be separate, so a consumer replayed
+        # the history and then drained the same events again. Every node
+        # showed up twice in the UI progress list.
+        async with await _client() as c:
+            job = (await c.post("/analyses", json={"ticker": "AAPL"})).json()
+            seen: list[str] = []
+            async with c.stream("GET", job["stream_url"]) as s:
+                async for line in s.aiter_lines():
+                    if line.startswith("event: "):
+                        seen.append(line.removeprefix("event: "))
+                    if line.startswith("event: result"):
+                        break
+
+        assert seen.count("status") == 1
+        assert seen.count("node_start") == seen.count("node_end")
+        assert seen.count("complete") == 1
+
     async def test_a_late_consumer_still_sees_the_whole_run(self, fake_graph: FakeGraph) -> None:
         async with await _client() as c:
             job = (await c.post("/analyses", json={"ticker": "AAPL"})).json()

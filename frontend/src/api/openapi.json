@@ -1,0 +1,1299 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Vantage",
+    "summary": "Finds what changed in SEC filings, and whether anyone noticed.",
+    "version": "0.2.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyses": {
+      "post": {
+        "tags": [
+          "analyses"
+        ],
+        "summary": "Submit Analysis",
+        "description": "Start a run and return immediately.\n\n202 rather than 200: the work is accepted, not finished. Progress is on\nthe stream endpoint and the result on the job endpoint.",
+        "operationId": "submit_analysis_analyses_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRef"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "analyses"
+        ],
+        "summary": "List Analyses",
+        "operationId": "list_analyses_analyses_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JobSummary"
+                  },
+                  "title": "Response List Analyses Analyses Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyses/{job_id}": {
+      "get": {
+        "tags": [
+          "analyses"
+        ],
+        "summary": "Get Analysis",
+        "operationId": "get_analysis_analyses__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "analyses"
+        ],
+        "summary": "Cancel Analysis",
+        "operationId": "cancel_analysis_analyses__job_id__delete",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyses/{job_id}/stream": {
+      "get": {
+        "tags": [
+          "analyses"
+        ],
+        "summary": "Stream Analysis",
+        "description": "Server-sent events for one run.\n\nThe stream always terminates with a `complete` or `error` event, so a\nclient never has to guess whether a silent connection means work in\nprogress or a dead backend.",
+        "operationId": "stream_analysis_analyses__job_id__stream_get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyses/{job_id}/sections/{accession}/{section_id}": {
+      "get": {
+        "tags": [
+          "filings"
+        ],
+        "summary": "Get Section",
+        "description": "The stored text a finding's span points into.\n\nThis is what makes a citation checkable in the UI: the client resolves\nstart and end against exactly the text the engine diffed.",
+        "operationId": "get_section_analyses__job_id__sections__accession___section_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "accession",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Accession"
+            }
+          },
+          {
+            "name": "section_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Section Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SectionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AnalysisResult": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "ticker": {
+            "type": "string",
+            "title": "Ticker"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "cik": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cik"
+          },
+          "sic": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sic"
+          },
+          "current_filing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Filing"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "prior_filing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Filing"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/FindingOut"
+            },
+            "type": "array",
+            "title": "Findings"
+          },
+          "attention": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AttentionScore"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          },
+          "timings": {
+            "items": {
+              "$ref": "#/components/schemas/NodeTimingOut"
+            },
+            "type": "array",
+            "title": "Timings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "ticker",
+          "status",
+          "company_name",
+          "cik",
+          "sic",
+          "current_filing",
+          "prior_filing",
+          "findings",
+          "attention",
+          "errors",
+          "timings"
+        ],
+        "title": "AnalysisResult",
+        "description": "A completed run.\n\n`errors` is populated rather than hidden. Partial failure is visible to\nthe caller instead of being swallowed into a plausible-looking default,\nwhich is how a hardcoded sentiment string shipped in every memo for the\nlife of the previous system."
+      },
+      "AnalyzeRequest": {
+        "properties": {
+          "ticker": {
+            "type": "string",
+            "pattern": "^[A-Za-z]{1,5}(-[A-Za-z]{1,2})?$",
+            "title": "Ticker",
+            "description": "US-listed ticker, for example AAPL"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RequestKind",
+            "default": "full"
+          },
+          "max_sections": {
+            "type": "integer",
+            "maximum": 6.0,
+            "minimum": 1.0,
+            "title": "Max Sections",
+            "default": 4
+          }
+        },
+        "type": "object",
+        "required": [
+          "ticker"
+        ],
+        "title": "AnalyzeRequest"
+      },
+      "AttentionScore": {
+        "properties": {
+          "ticker": {
+            "type": "string",
+            "title": "Ticker"
+          },
+          "window_days": {
+            "type": "integer",
+            "title": "Window Days"
+          },
+          "signals": {
+            "items": {
+              "$ref": "#/components/schemas/AttentionSignal"
+            },
+            "type": "array",
+            "title": "Signals"
+          },
+          "available_sources": {
+            "items": {
+              "$ref": "#/components/schemas/AttentionSourceName"
+            },
+            "type": "array",
+            "title": "Available Sources",
+            "readOnly": true
+          },
+          "total_mentions": {
+            "type": "integer",
+            "title": "Total Mentions",
+            "readOnly": true
+          },
+          "score": {
+            "type": "number",
+            "title": "Score",
+            "description": "Attention in [0, 1], from the mean z-score across live sources.\n\nA logistic squash keeps a single viral source from saturating the\nresult while still separating \"quiet\" from \"loud\".",
+            "readOnly": true
+          },
+          "net_sentiment": {
+            "type": "number",
+            "title": "Net Sentiment",
+            "readOnly": true
+          },
+          "is_degraded": {
+            "type": "boolean",
+            "title": "Is Degraded",
+            "description": "True when some configured source failed, so the score understates.",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "ticker",
+          "window_days",
+          "signals",
+          "available_sources",
+          "total_mentions",
+          "score",
+          "net_sentiment",
+          "is_degraded"
+        ],
+        "title": "AttentionScore",
+        "description": "Aggregate across whatever sources were available."
+      },
+      "AttentionSignal": {
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/AttentionSourceName"
+          },
+          "ticker": {
+            "type": "string",
+            "title": "Ticker"
+          },
+          "window_days": {
+            "type": "integer",
+            "title": "Window Days"
+          },
+          "mention_count": {
+            "type": "integer",
+            "title": "Mention Count"
+          },
+          "baseline_daily_mean": {
+            "type": "number",
+            "title": "Baseline Daily Mean"
+          },
+          "baseline_daily_stdev": {
+            "type": "number",
+            "title": "Baseline Daily Stdev"
+          },
+          "sentiment_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/Sentiment"
+            },
+            "type": "object",
+            "title": "Sentiment Counts"
+          },
+          "sampled_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Sampled At"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "readOnly": true
+          },
+          "z_score": {
+            "type": "number",
+            "title": "Z Score",
+            "description": "Standard deviations above the ticker's own baseline.\n\nGuarded against a zero stdev, which happens for quiet tickers where\nevery day in the baseline window had the same count.",
+            "readOnly": true
+          },
+          "net_sentiment": {
+            "type": "number",
+            "title": "Net Sentiment",
+            "description": "Positive share minus negative share, in [-1, 1]. 0 when unknown.",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "ticker",
+          "window_days",
+          "mention_count",
+          "baseline_daily_mean",
+          "baseline_daily_stdev",
+          "sentiment_counts",
+          "sampled_at",
+          "error",
+          "available",
+          "z_score",
+          "net_sentiment"
+        ],
+        "title": "AttentionSignal",
+        "description": "One source's reading for one ticker over one window."
+      },
+      "AttentionSourceName": {
+        "type": "string",
+        "enum": [
+          "bluesky",
+          "hackernews",
+          "reddit",
+          "news"
+        ],
+        "title": "AttentionSourceName"
+      },
+      "ChangeType": {
+        "type": "string",
+        "enum": [
+          "added",
+          "removed",
+          "reworded",
+          "moved"
+        ],
+        "title": "ChangeType"
+      },
+      "Filing": {
+        "properties": {
+          "accession": {
+            "type": "string",
+            "title": "Accession"
+          },
+          "cik": {
+            "type": "string",
+            "title": "Cik"
+          },
+          "ticker": {
+            "type": "string",
+            "title": "Ticker"
+          },
+          "form": {
+            "$ref": "#/components/schemas/Form"
+          },
+          "filing_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Filing Date"
+          },
+          "period_of_report": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Of Report"
+          },
+          "primary_doc_url": {
+            "type": "string",
+            "title": "Primary Doc Url"
+          },
+          "fetched_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetched At"
+          },
+          "char_length": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Char Length"
+          },
+          "fiscal_label": {
+            "type": "string",
+            "title": "Fiscal Label",
+            "description": "Human label used to describe which filing a finding came from.",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "accession",
+          "cik",
+          "ticker",
+          "form",
+          "filing_date",
+          "primary_doc_url",
+          "fiscal_label"
+        ],
+        "title": "Filing"
+      },
+      "FindingKind": {
+        "type": "string",
+        "enum": [
+          "diff",
+          "novelty",
+          "peer"
+        ],
+        "title": "FindingKind"
+      },
+      "FindingOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/FindingKind"
+          },
+          "ticker": {
+            "type": "string",
+            "title": "Ticker"
+          },
+          "cik": {
+            "type": "string",
+            "title": "Cik"
+          },
+          "section_id": {
+            "$ref": "#/components/schemas/SectionId"
+          },
+          "change_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChangeType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "current_span": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SpanOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "prior_span": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SpanOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "current_accession": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Accession"
+          },
+          "prior_accession": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prior Accession"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "default": ""
+          },
+          "rationale": {
+            "type": "string",
+            "title": "Rationale",
+            "default": ""
+          },
+          "materiality": {
+            "$ref": "#/components/schemas/Materiality"
+          },
+          "novelty_phrase": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Novelty Phrase"
+          },
+          "novelty_first_seen": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Novelty First Seen"
+          },
+          "peer_ciks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Peer Ciks"
+          },
+          "peer_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Peer Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "ticker",
+          "cik",
+          "section_id",
+          "change_type",
+          "current_span",
+          "prior_span",
+          "current_accession",
+          "prior_accession",
+          "summary",
+          "rationale",
+          "materiality",
+          "novelty_phrase",
+          "novelty_first_seen",
+          "peer_ciks",
+          "peer_total"
+        ],
+        "title": "FindingOut"
+      },
+      "Form": {
+        "type": "string",
+        "enum": [
+          "10-K",
+          "10-Q",
+          "8-K",
+          "4"
+        ],
+        "title": "Form"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "git_sha": {
+            "type": "string",
+            "title": "Git Sha"
+          },
+          "checkpointer": {
+            "type": "string",
+            "title": "Checkpointer"
+          },
+          "attention_sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Attention Sources"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "git_sha",
+          "checkpointer",
+          "attention_sources"
+        ],
+        "title": "HealthOut"
+      },
+      "JobRef": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "ticker": {
+            "type": "string",
+            "title": "Ticker"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RequestKind"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "stream_url": {
+            "type": "string",
+            "title": "Stream Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "ticker",
+          "kind",
+          "status",
+          "created_at",
+          "stream_url"
+        ],
+        "title": "JobRef",
+        "description": "What a submit returns. The work continues after the response."
+      },
+      "JobSummary": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "ticker": {
+            "type": "string",
+            "title": "Ticker"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RequestKind"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "finding_count": {
+            "type": "integer",
+            "title": "Finding Count",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "ticker",
+          "kind",
+          "status",
+          "created_at",
+          "finished_at",
+          "error",
+          "finding_count"
+        ],
+        "title": "JobSummary"
+      },
+      "Materiality": {
+        "properties": {
+          "score": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Score"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "band": {
+            "type": "string",
+            "title": "Band",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "score",
+          "band"
+        ],
+        "title": "Materiality",
+        "description": "Why a change is worth surfacing, not just that it is."
+      },
+      "NodeTimingOut": {
+        "properties": {
+          "node": {
+            "type": "string",
+            "title": "Node"
+          },
+          "seconds": {
+            "type": "number",
+            "title": "Seconds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "node",
+          "seconds"
+        ],
+        "title": "NodeTimingOut"
+      },
+      "RequestKind": {
+        "type": "string",
+        "enum": [
+          "diff",
+          "novelty",
+          "peer",
+          "full"
+        ],
+        "title": "RequestKind",
+        "description": "What the caller asked for.\n\nDrives conditional routing. Running every engine on every request is what\nthe old graph did, and most of it was wasted: a document lookup does not\nneed peer analysis."
+      },
+      "SectionId": {
+        "type": "string",
+        "enum": [
+          "item_1_business",
+          "item_1a_risk_factors",
+          "item_1b_unresolved_staff_comments",
+          "item_1c_cybersecurity",
+          "item_2_properties",
+          "item_3_legal_proceedings",
+          "item_7_mda",
+          "item_7a_market_risk",
+          "item_8_financial_statements",
+          "item_9a_controls",
+          "part1_item2_mda",
+          "part2_item1a_risk_factors",
+          "part2_item1_legal_proceedings",
+          "other"
+        ],
+        "title": "SectionId",
+        "description": "Canonical section identity, stable across years.\n\nFilings renumber and retitle items between years, so the raw heading is\nnot a usable key. The parser maps whatever the document says onto one of\nthese, and cross-year alignment joins on it."
+      },
+      "SectionOut": {
+        "properties": {
+          "accession": {
+            "type": "string",
+            "title": "Accession"
+          },
+          "section_id": {
+            "$ref": "#/components/schemas/SectionId"
+          },
+          "heading": {
+            "type": "string",
+            "title": "Heading"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "char_length": {
+            "type": "integer",
+            "title": "Char Length"
+          }
+        },
+        "type": "object",
+        "required": [
+          "accession",
+          "section_id",
+          "heading",
+          "text",
+          "char_length"
+        ],
+        "title": "SectionOut",
+        "description": "Section text, for resolving a citation in the UI."
+      },
+      "Sentiment": {
+        "type": "string",
+        "enum": [
+          "positive",
+          "neutral",
+          "negative"
+        ],
+        "title": "Sentiment"
+      },
+      "SpanOut": {
+        "properties": {
+          "accession": {
+            "type": "string",
+            "title": "Accession"
+          },
+          "section_id": {
+            "$ref": "#/components/schemas/SectionId"
+          },
+          "start": {
+            "type": "integer",
+            "title": "Start"
+          },
+          "end": {
+            "type": "integer",
+            "title": "End"
+          },
+          "quote": {
+            "type": "string",
+            "title": "Quote"
+          }
+        },
+        "type": "object",
+        "required": [
+          "accession",
+          "section_id",
+          "start",
+          "end",
+          "quote"
+        ],
+        "title": "SpanOut",
+        "description": "A citation. Every field needed to resolve it back to source text."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

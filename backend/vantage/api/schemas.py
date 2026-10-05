@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from vantage.domain.attention import AttentionScore
 from vantage.domain.filing import Filing, SectionId, Span
@@ -22,6 +22,19 @@ from vantage.graph.state import RequestKind
 # A ticker, not a sentence. Rejecting at the edge keeps a bad value out of the
 # EDGAR rate limiter and out of the attention sources' daily quotas.
 TICKER_PATTERN = r"^[A-Za-z]{1,5}(-[A-Za-z]{1,2})?$"
+
+
+class ResponseModel(BaseModel):
+    """Base for anything the server sends.
+
+    json_schema_serialization_defaults_required makes defaulted fields
+    required in the response schema. Without it every list and optional
+    field arrives in the generated TypeScript as possibly undefined,
+    even though the server always serialises them, and the client fills
+    up with guards for states that cannot occur.
+    """
+
+    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
 
 
 class AnalyzeRequest(BaseModel):
@@ -35,7 +48,7 @@ class AnalyzeRequest(BaseModel):
         return v.upper()
 
 
-class JobRef(BaseModel):
+class JobRef(ResponseModel):
     """What a submit returns. The work continues after the response."""
 
     job_id: str
@@ -46,7 +59,7 @@ class JobRef(BaseModel):
     stream_url: str
 
 
-class JobSummary(BaseModel):
+class JobSummary(ResponseModel):
     job_id: str
     ticker: str
     kind: RequestKind
@@ -57,7 +70,7 @@ class JobSummary(BaseModel):
     finding_count: int = 0
 
 
-class SpanOut(BaseModel):
+class SpanOut(ResponseModel):
     """A citation. Every field needed to resolve it back to source text."""
 
     accession: str
@@ -77,7 +90,7 @@ class SpanOut(BaseModel):
         )
 
 
-class FindingOut(BaseModel):
+class FindingOut(ResponseModel):
     id: str
     kind: FindingKind
     ticker: str
@@ -97,12 +110,12 @@ class FindingOut(BaseModel):
     peer_total: int | None = None
 
 
-class NodeTimingOut(BaseModel):
+class NodeTimingOut(ResponseModel):
     node: str
     seconds: float
 
 
-class AnalysisResult(BaseModel):
+class AnalysisResult(ResponseModel):
     """A completed run.
 
     `errors` is populated rather than hidden. Partial failure is visible to
@@ -125,7 +138,7 @@ class AnalysisResult(BaseModel):
     timings: list[NodeTimingOut] = Field(default_factory=list)
 
 
-class SectionOut(BaseModel):
+class SectionOut(ResponseModel):
     """Section text, for resolving a citation in the UI."""
 
     accession: str
@@ -135,7 +148,7 @@ class SectionOut(BaseModel):
     char_length: int
 
 
-class HealthOut(BaseModel):
+class HealthOut(ResponseModel):
     status: str
     git_sha: str
     checkpointer: str

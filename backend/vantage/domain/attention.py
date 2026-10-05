@@ -34,7 +34,7 @@ class Sentiment(StrEnum):
 class AttentionSignal(BaseModel):
     """One source's reading for one ticker over one window."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, json_schema_serialization_defaults_required=True)
 
     source: AttentionSourceName
     ticker: str
@@ -82,6 +82,8 @@ class AttentionSignal(BaseModel):
 
 class AttentionScore(BaseModel):
     """Aggregate across whatever sources were available."""
+
+    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
 
     ticker: str
     window_days: int

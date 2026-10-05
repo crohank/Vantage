@@ -72,13 +72,14 @@ class Job:
         self.error: str | None = None
         self.result: dict[str, Any] | None = None
 
-        # Unbounded because a dropped consumer must not stall the producer.
-        # Events are small and a run emits tens, not thousands.
-        self.events: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
         self.task: asyncio.Task[None] | None = None
-        # Replayed to a consumer that attaches late, so a client which starts
-        # streaming after the run began does not miss the early nodes.
+        # The single event log. Consumers read it by index rather than
+        # consuming a queue, so several can follow one job and a late one
+        # still sees the whole run from the start. An earlier version kept
+        # both a log and a queue, which replayed the log and then drained
+        # the same events again, so every node appeared twice.
         self.history: list[dict[str, Any]] = []
+        self._appended = asyncio.Event()
 
     @property
     def thread_id(self) -> str:
@@ -90,32 +91,29 @@ class Job:
 
     def emit(self, event: dict[str, Any]) -> None:
         self.history.append(event)
-        self.events.put_nowait(event)
+        self._appended.set()
 
     async def stream(self) -> AsyncIterator[dict[str, Any]]:
-        """Replay what has happened, then follow.
+        """Replay the log, then follow it.
 
         Always ends after a terminal event. The previous SSE implementation
         could end without one, leaving the UI spinning with no error shown.
         """
-        for event in list(self.history):
-            yield event
-        if self.is_terminal:
-            return
-
+        cursor = 0
         while True:
+            while cursor < len(self.history):
+                yield self.history[cursor]
+                cursor += 1
+
+            if self.is_terminal:
+                return
+
+            self._appended.clear()
             try:
-                # asyncio.timeout rather than wait_for: wait_for's overloads
-                # drop the None from the queue's item type, after which mypy
-                # calls the sentinel branch unreachable.
                 async with asyncio.timeout(HEARTBEAT_SECONDS):
-                    item = await self.events.get()
+                    await self._appended.wait()
             except TimeoutError:
                 yield {"type": "heartbeat", "at": datetime.now(UTC).isoformat()}
-                continue
-            if item is None:
-                return
-            yield item
 
     def cancel(self) -> bool:
         if self.task is None or self.task.done():
@@ -171,8 +169,9 @@ class JobRunner:
             job.emit({"type": "error", "message": str(exc)})
         finally:
             job.finished_at = datetime.now(UTC)
-            # Unblock every consumer, including on the cancellation path.
-            job.events.put_nowait(None)
+            # Wake every follower so they observe the terminal state and
+            # close, including on the cancellation path.
+            job._appended.set()
 
     async def _execute(self, job: Job) -> None:
         graph = await get_graph()
