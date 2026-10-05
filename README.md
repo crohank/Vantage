@@ -52,7 +52,15 @@ Numbers below are produced by `uv run python -m vantage.eval.run_diff_eval`
 and the test suite, not written by hand.
 
 **Diff engine**, against a golden set built by applying known edits to real
-filing sections, so the expected output is derived rather than labelled:
+filing sections, so the expected output is derived rather than labelled.
+60 cases:
+
+| | |
+|---|---|
+| Precision | 95.9% |
+| Recall | 89.0% |
+| F1 | 92.3% |
+| Citation validity | 100%, 526 of 526 |
 
 | Change type | Recall |
 |---|---|
@@ -61,15 +69,22 @@ filing sections, so the expected output is derived rather than labelled:
 | Reworded | 72/76 |
 | Moved | 52/59 |
 
-The confusion matrix is printed by the same command. The errors are mostly
-`moved` scored as `added`, which is the expected failure: a paragraph that
-moves and is edited at the same time stops being recognisable as the same
-paragraph.
+The confusion matrix is printed by the same command and rendered on the
+`/metrics` page. The errors are mostly `moved` scored as `added`, which is
+the expected failure: a paragraph that moves and is edited at the same time
+stops being recognisable as the same paragraph.
 
 **Citation validity** is a hard gate rather than a score. Every emitted span
 must slice out of the stored section text byte for byte. This is enforced in
 `finalize` at runtime and asserted in CI; a finding that fails is discarded,
 not down-ranked.
+
+**Trajectory**, scored per request kind: required nodes, nodes forbidden for
+that kind, repeat detection, a step budget, and the rule that the generative
+step must run after verification. This caught `finalize` and
+`explain_findings` each running twice on the full path, which also billed
+the model twice. Measured after the fix: a diff request takes 2.0s against
+a full request's 6.3s, which is the conditional routing earning its keep.
 
 **Coverage**: 202 offline tests, no network, no model calls.
 
@@ -102,10 +117,10 @@ does not pay for novelty, peers or attention.
 Progress reaches the browser over SSE from the graph's own `astream_events`,
 so the node names in the UI are the real ones.
 
-- **Backend**: Python 3.12, FastAPI, LangGraph, Pydantic v2. 6,389 lines.
+- **Backend**: Python 3.12, FastAPI, LangGraph, Pydantic v2.
 - **Frontend**: React 18, TypeScript, Tailwind, shadcn/ui. 1,900 lines, with
   every API type generated from the backend's OpenAPI schema.
-- **Tests**: 2,690 lines.
+- **Tests**: 255 offline, plus a live suite that hits EDGAR and Hacker News.
 
 ## Data sources
 
@@ -140,7 +155,12 @@ uv run uvicorn vantage.api.app:app --reload
 cd frontend && npm ci && npm run dev
 ```
 
-Then open http://127.0.0.1:5173 and enter a ticker.
+Then open http://127.0.0.1:5173 and enter a ticker. `/metrics` shows the
+diff engine's scores.
+
+Only `SEC_EDGAR_USER_AGENT` is needed for the diff, novelty and peer engines.
+Without an LLM key the findings come back unexplained, and the response says
+so rather than quietly omitting it.
 
 `SEC_EDGAR_USER_AGENT` must be a real contact string, which is SEC fair-access
 policy. Everything else is optional: without `MONGODB_URI` the graph uses an
@@ -151,7 +171,8 @@ corresponding sources report themselves unavailable.
 
 ```bash
 uv run python -m vantage.eval.run_diff_eval          # the gate, offline
-uv run pytest tests -q                               # 202 tests, offline
+uv run pytest tests/test_trajectory.py -q            # path specs, offline
+uv run pytest tests -q                               # 255 tests, offline
 uv run pytest tests -q -m live                       # hits EDGAR and HN
 ```
 
