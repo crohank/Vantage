@@ -17,3 +17,10 @@ Thumbs.db
 .vscode/
 .idea/
 
+
+# uv / local env
+.venv/
+.cache/
+
+# Eval corpus: real filings, ~1.5 MB each. CI restores from cache.
+vantage/eval/corpus/

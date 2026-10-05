@@ -59,4 +59,21 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
 )
 SheetContent.displayName = SheetPrimitive.Content.displayName
 
-export { Sheet, SheetTrigger, SheetClose, SheetContent }
+const SheetHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div className={cn('flex flex-col space-y-1.5', className)} {...props} />
+)
+SheetHeader.displayName = 'SheetHeader'
+
+const SheetTitle = React.forwardRef<
+  React.ElementRef<typeof SheetPrimitive.Title>,
+  React.ComponentPropsWithoutRef<typeof SheetPrimitive.Title>
+>(({ className, ...props }, ref) => (
+  <SheetPrimitive.Title
+    ref={ref}
+    className={cn('text-base font-semibold text-foreground', className)}
+    {...props}
+  />
+))
+SheetTitle.displayName = SheetPrimitive.Title.displayName
+
+export { Sheet, SheetTrigger, SheetClose, SheetContent, SheetHeader, SheetTitle }

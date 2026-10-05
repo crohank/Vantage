@@ -1,20 +1,34 @@
 services:
   - type: web
-    name: vantage-backend
-    runtime: node
+    name: vantage-api
+    runtime: python
     plan: free
-    buildCommand: pip3 install -r backend/requirements.txt && FASTEMBED_CACHE_PATH=/opt/render/project/src/.fastembed_cache python3 -c "from fastembed import TextEmbedding; list(TextEmbedding('sentence-transformers/all-MiniLM-L6-v2').embed(['warmup']))" && cd backend && npm install && npm run build
-    startCommand: cd backend && npm start
+    # uv is not preinstalled on Render's Python runtime, and the lockfile is
+    # the point of using it, so install it and sync from the lock rather than
+    # resolving fresh at build time.
+    buildCommand: |
+      pip install uv
+      cd backend && uv sync --frozen --no-dev
+    # One worker. The free tier caps at 512 MB and the job runner already
+    # bounds concurrency in-process via VANTAGE_MAX_CONCURRENT_JOBS.
+    startCommand: cd backend && uv run uvicorn vantage.api.app:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /health
     envVars:
-      - key: NODE_ENV
-        value: production
-      - key: FASTEMBED_CACHE_PATH
-        value: /opt/render/project/src/.fastembed_cache
       - key: PYTHON_VERSION
         value: 3.12.7
-      # Set the following in the Render dashboard → Environment tab:
-      # MONGODB_URI        → your Atlas connection string
-      # GEMINI_API_KEY     → your Gemini API key
-      # HUGGINGFACE_API_KEY → your HuggingFace API key
-      # FRED_API_KEY       → your FRED API key
-      # FRONTEND_URL       → your Vercel URL (add after Vercel deploy)
+      - key: VANTAGE_CACHE_PATH
+        value: /opt/render/project/src/.cache
+      # Render exposes the deployed commit, which the findings carry as
+      # provenance so a result can be traced back to the code that made it.
+      - key: VANTAGE_GIT_SHA
+        fromService:
+          type: web
+          name: vantage-api
+          property: commitId
+      # Set in the dashboard:
+      #   SEC_EDGAR_USER_AGENT  required, must be a real contact address
+      #   VANTAGE_API_KEY       required in production, there is no auth without it
+      #   VANTAGE_CORS_ORIGINS  the Vercel URL, added after the frontend deploys
+      #   MONGODB_URI           optional, enables durable checkpointing
+      #   GEMINI_API_KEY        optional, only the explain step uses it
+      #   Attention keys        all optional, sources degrade independently

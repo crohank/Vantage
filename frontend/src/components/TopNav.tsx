@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LineChart, FolderOpen, Command } from 'lucide-react'
+import { BarChart3, FileDiff } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
 import { cn } from '../lib/utils'
 
@@ -7,7 +7,7 @@ function TopNav() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <div className="mx-auto flex h-12 max-w-screen-2xl items-center gap-6 px-4">
-        <NavLink to="/analyse" className="flex items-center gap-2">
+        <NavLink to="/findings" className="flex items-center gap-2">
           <span className="grid h-6 w-6 place-items-center rounded-sm bg-primary text-primary-foreground">
             <span className="font-mono text-[11px] font-bold leading-none">V</span>
           </span>
@@ -15,28 +15,16 @@ function TopNav() {
             VANTAGE
           </span>
           <span className="hidden font-mono text-[10px] tracking-[0.2em] text-muted-foreground sm:inline">
-            / EQUITY RESEARCH
+            / DISCLOSURE INTELLIGENCE
           </span>
         </NavLink>
 
         <nav className="flex items-center gap-1">
-          <NavItem to="/analyse" icon={<LineChart size={14} />} label="Analyse" />
-          <NavItem to="/documents" icon={<FolderOpen size={14} />} label="Documents" />
+          <NavItem to="/findings" icon={<FileDiff size={14} />} label="Findings" />
+          <NavItem to="/metrics" icon={<BarChart3 size={14} />} label="Metrics" />
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          <button
-            type="button"
-            className="hidden h-8 items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-[12px] text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground md:inline-flex"
-            aria-label="Open command palette"
-            disabled
-          >
-            <Command size={12} />
-            <span>Search</span>
-            <kbd className="ml-2 rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-              ⌘K
-            </kbd>
-          </button>
           <ThemeToggle />
         </div>
       </div>

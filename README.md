@@ -1,410 +1,224 @@
 # Vantage
 
-Live App: [https://vantage-pied.vercel.app/analyse](https://vantage-pied.vercel.app/analyse)
+Finds what changed in a company's SEC filings, and whether anyone noticed.
 
-A multi-agent AI system built with LangGraph that generates structured investment research reports with risk modeling and scenario analysis. The system features a full-stack web application with real-time progress tracking and a Python backend orchestrating specialized AI agents.
-
-## 🎯 Project Overview
-
-This is a **decision-support research system** (NOT a trading bot) that analyzes stocks and generates investment recommendations based on:
-
-- Market data analysis
-- Macroeconomic trends
-- Risk assessment
-- Scenario modeling (Bull/Base/Bear)
-- Professional investment memos
-
-The system uses a multi-agent architecture where specialized agents collaborate to produce comprehensive investment research reports.
-
-## 📋 Input/Output
-
-### Input
-- Stock ticker (e.g., AAPL, MSFT)
-- Time horizon: `short` | `medium` | `long`
-- Risk profile: `conservative` | `moderate` | `aggressive`
-
-### Output
-- Buy / Hold / Sell recommendation
-- Confidence score (0–1)
-- Bull / Base / Bear scenarios with probabilities and expected returns
-- Investment memo (Markdown format)
-- Comprehensive market data, macro analysis, and risk metrics
-
-## 🛠️ Technology Stack
-
-### Backend (Python)
-- **Language**: Python 3.10+
-- **Multi-agent Framework**: LangGraph 0.2.0+
-- **LLM Integration**: LangChain 0.3.0+ with LangChain-Ollama 0.1.0+
-- **LLM Model**: Ollama (deepseek-r1:8b) - 8 billion parameter reasoning model
-- **Data Sources**:
-  - `yfinance` 0.2.0+ (market data, stock prices, valuation metrics)
-  - `fredapi` 0.5.0+ (Federal Reserve Economic Data - macroeconomic indicators)
-- **Quantitative Libraries**:
-  - `pandas` 2.0.0+ (data manipulation)
-  - `numpy` 1.24.0+ (numerical computations)
-  - `scipy` 1.10.0+ (statistical functions)
-  - `pandas-ta` (technical analysis indicators - optional)
-- **Configuration**: `python-dotenv` 1.0.0+ (environment variable management)
-
-### Frontend (Web Application)
-- **Framework**: React 18.2.0+ with TypeScript 5.9.3+
-- **Build Tool**: Vite 5.0.0+
-- **UI Library**: React Bootstrap 2.10.10+ (Bootstrap 5.3.8+)
-- **HTTP Client**: Axios 1.6.0+
-- **Markdown Rendering**: react-markdown 9.0.0+
-- **Styling**: Bootstrap CSS with custom gradients
-
-### Backend API (Node.js)
-- **Runtime**: Node.js with TypeScript
-- **Framework**: Express 4.18.2+
-- **Development**: 
-  - TSX 4.21.0+ (TypeScript execution)
-  - Nodemon 3.1.11+ (hot reload)
-- **CORS**: cors 2.8.5+
-- **Communication**: Server-Sent Events (SSE) for real-time progress streaming
-
-### Architecture Pattern
-- **State Management**: LangGraph StateGraph with TypedDict state schema
-- **Execution Model**: Sequential pipeline with parallel data collection optimization
-- **Inter-process Communication**: Node.js spawns Python subprocess with real-time stdout capture
-
-## 📁 Repository Structure
+Every claim resolves to a verbatim span in a specific document. A finding that
+cannot quote its source is dropped before it reaches you, at runtime and in CI.
 
 ```
-analyst/
-│
-├── frontend/                      # React Web Frontend
-│   ├── src/
-│   │   ├── App.tsx                # Main application component
-│   │   ├── components/            # React components
-│   │   │   ├── TickerInput.tsx
-│   │   │   ├── HorizonSelect.tsx
-│   │   │   ├── RiskProfileSelect.tsx
-│   │   │   ├── ProgressDisplay.tsx
-│   │   │   ├── ResultsDisplay.tsx
-│   │   │   ├── ScenarioCard.tsx
-│   │   │   └── MemoViewer.tsx
-│   │   └── services/
-│   │       └── api.ts             # API client with SSE support
-│   ├── Dockerfile
-│   ├── nginx.conf
-│   └── package.json
-│
-├── backend/                       # Python Agents + Express API
-│   ├── agents/                    # AI Agent Implementations
-│   │   ├── market_data_agent.py
-│   │   ├── macro_trends_agent.py
-│   │   ├── risk_agent.py
-│   │   ├── scenario_agent.py
-│   │   └── memo_writer_agent.py
-│   ├── graph/                     # LangGraph Orchestration
-│   │   └── research_graph.py
-│   ├── tools/                     # Data Fetching & Processing
-│   │   ├── market_data.py
-│   │   ├── macro_data.py
-│   │   ├── risk_metrics.py
-│   │   └── sentiment.py
-│   ├── schemas/                   # Type Definitions
-│   │   └── state.py
-│   ├── src/                       # Express API Server (Node.js)
-│   │   ├── server.ts
-│   │   ├── routes/analysis.ts
-│   │   └── services/pythonService.ts
-│   ├── outputs/                   # Generated Investment Memos
-│   │   └── {TICKER}_memo.md
-│   ├── config.py
-│   ├── main.py
-│   ├── requirements.txt
-│   ├── Dockerfile
-│   ├── Dockerfile.backend
-│   └── package.json
-│
-├── docs/                          # Documentation & Learning Guides
-│   ├── DEPLOYMENT.md
-│   ├── USE.md
-│   └── ...
-│
-├── tests/                         # Test Scripts
-│   ├── test_components.py
-│   └── test_gemini_api.py
-│
-├── docker-compose.yml
-├── render.yaml
-├── .env.example
-└── README.md
+NVDA, FY2025 to FY2026, 200 findings in 6.2s, 77 rated high materiality.
+
+  [ADDED] Risk Factors, 0.99
+  "Governments and regulators are also considering, and in certain cases,
+   have imposed restrictions on the hardware, software, and systems used to
+   develop frontier foundation models and generative AI. For example, the
+   EU AI Act became effective on August 1, 2024..."
+  0001045810-26-000021, chars 68,779 to 70,299 of 114,443
 ```
 
-## 🤖 Agent Architecture & Responsibilities
+## Why diffs rather than opinions
 
-The system uses a multi-agent architecture where each agent has a specific responsibility and populates designated fields in the shared `ResearchState` object.
+The obvious version of this product asks a model what it thinks of a stock.
+That output has no ground truth, so the best available evaluation is a model
+grading another model on a 1 to 5 scale, and the honest answer to "how do you
+know it is right?" is that you do not.
 
-### Agent Workflow
+Diffing inverts it. Both documents are on disk, so whether the system found
+the paragraph that was added is decidable by string alignment. That single
+property is what makes the rest of the system measurable.
+
+The design rule that follows:
+
+> **Location is deterministic. Explanation is generative.**
+
+A mechanical aligner finds the changed paragraph. The model only classifies
+and explains a change that has already been located. The model is never asked
+to find anything, so it is never in a position to invent one.
+
+## What it does
+
+| Engine | Question | Ground truth |
+|---|---|---|
+| **Diff** | What language changed between the two most recent annual filings? | Yes, both documents are held |
+| **Novelty** | Has this filer ever used this phrase before? | Yes, EDGAR full-text search back to 2001 |
+| **Peer** | Did the rest of the sector add the same language this quarter? | Yes, same |
+| **Attention** | Is anyone discussing it? | No, scored and labelled as discussion volume |
+
+The interesting quadrant is a material change nobody is talking about.
+
+## Measured
+
+Numbers below are produced by `uv run python -m vantage.eval.run_diff_eval`
+and the test suite, not written by hand.
+
+**Diff engine**, against a golden set built by applying known edits to real
+filing sections, so the expected output is derived rather than labelled.
+60 cases:
+
+| | |
+|---|---|
+| Precision | 95.9% |
+| Recall | 89.0% |
+| F1 | 92.3% |
+| Citation validity | 100%, 526 of 526 |
+
+| Change type | Recall |
+|---|---|
+| Added | 120/120 |
+| Removed | 116/119 |
+| Reworded | 72/76 |
+| Moved | 52/59 |
+
+The confusion matrix is printed by the same command and rendered on the
+`/metrics` page. The errors are mostly `moved` scored as `added`, which is
+the expected failure: a paragraph that moves and is edited at the same time
+stops being recognisable as the same paragraph.
+
+**Citation validity** is a hard gate rather than a score. Every emitted span
+must slice out of the stored section text byte for byte. This is enforced in
+`finalize` at runtime and asserted in CI; a finding that fails is discarded,
+not down-ranked.
+
+**Trajectory**, scored per request kind: required nodes, nodes forbidden for
+that kind, repeat detection, a step budget, and the rule that the generative
+step must run after verification. This caught `finalize` and
+`explain_findings` each running twice on the full path, which also billed
+the model twice. Measured after the fix: a diff request takes 2.0s against
+a full request's 6.3s, which is the conditional routing earning its keep.
+
+**Coverage**: 202 offline tests, no network, no model calls.
+
+**Ingest**: Item 1A for NVDA is 114,443 characters and is diffed whole.
+
+## Architecture
 
 ```
-Start
-  ↓
-[Data Collection Node] (Parallel Execution)
-  ├── Market Data Agent ──┐
-  └── Macro Trends Agent ──┘
-  ↓
-Risk Analyst Agent
-  ↓
-Scenario Analysis Agent
-  ↓
-Memo Writer Agent
-  ↓
-End
+          FastAPI
+             |
+        LangGraph
+             |
+    resolve_company
+             |
+     ingest_filings
+         /        \
+    run_diff    measure_attention
+        |             |
+   run_novelty        |
+        |             |
+    run_peer          |
+         \           /
+          finalize  (drops findings whose spans do not resolve)
 ```
 
-### Agent Details
+`run_diff` and `measure_attention` run concurrently and merge through state
+reducers. Routing is conditional on what was asked, so a diff-only request
+does not pay for novelty, peers or attention.
 
-| Agent | Responsibility | Output | LLM Usage | Typical Runtime |
-|-------|---------------|--------|-----------|----------------|
-| **Market Data Agent** | Fetches stock price history, valuation metrics (P/E, P/B, P/S), and technical indicators (RSI, moving averages, MACD, Bollinger Bands). Determines price trends over 6-month periods. | `market_data` | None | 30-60 seconds |
-| **Macro Trends Agent** | Analyzes macroeconomic conditions via FRED API (interest rates, inflation trends), compares sector ETF performance across 11 sectors, and performs LLM-based sentiment analysis. | `macro_data` | Yes (sentiment analysis) | 60-120 seconds (includes ~30-60s LLM call) |
-| **Risk Analyst Agent** | Computes quantitative risk metrics (annualized volatility, beta vs S&P 500, maximum drawdown) and uses LLM to identify key risks based on market, macro, and risk data. | `risk_analysis` | Yes (risk identification) | 60-120 seconds (includes ~30-60s LLM call) |
-| **Scenario Agent** | Generates three investment scenarios (Bull/Base/Bear) with expected returns (as decimals) and probabilities (must sum to 1.0) based on comprehensive analysis of all previous agent outputs. | `scenarios` | Yes (scenario generation) | 30-120 seconds (LLM call) |
-| **Memo Writer Agent** | Generates professional investment memo in Markdown format with executive summary, investment thesis, key risks, scenarios, and recommendation. Calculates confidence score and determines Buy/Hold/Sell recommendation. | `memo`, `recommendation`, `confidence_score` | Yes (memo generation) | 60-120 seconds (LLM call) |
+Progress reaches the browser over SSE from the graph's own `astream_events`,
+so the node names in the UI are the real ones.
 
-### Design Decisions
+- **Backend**: Python 3.12, FastAPI, LangGraph, Pydantic v2.
+- **Frontend**: React 18, TypeScript, Tailwind, shadcn/ui. 1,900 lines, with
+  every API type generated from the backend's OpenAPI schema.
+- **Tests**: 255 offline, plus a live suite that hits EDGAR and Hacker News.
 
-1. **Parallel Data Collection**: Market Data and Macro Trends agents run in parallel using `ThreadPoolExecutor` since they are independent and can save ~30-60 seconds of execution time.
+## Data sources
 
-2. **LLM Model**: Uses Ollama with `deepseek-r1:8b` - a reasoning model optimized for analytical tasks. The 8B parameter size provides a good balance between quality and speed for local execution.
+All free. No paid tier is required to run this.
 
-3. **State Schema**: Uses TypedDict for type safety and clear contract between agents. Each agent only modifies its designated fields.
+| Source | Terms |
+|---|---|
+| EDGAR submissions, company facts, full-text search, filing RSS | No key, 10 req/sec, real User-Agent required |
+| Hacker News via Algolia | No key |
+| Bluesky (AT Protocol) | Free |
+| Reddit | Free for non-commercial use, 100 QPM |
+| Finnhub, Marketaux, Google News RSS | Free tiers |
 
-4. **Warmup Optimization**: LLM model is warmed up on first run (3-5 minutes) and cached for subsequent runs within 1 hour, significantly improving subsequent execution times.
+X is not supported. Its free tier was discontinued for new developers in
+February 2026 and reads are now billed per post.
 
-5. **Real-time Progress**: Backend captures Python stdout/stderr in real-time and streams progress updates via Server-Sent Events to the frontend, providing transparency into long-running operations.
+Attention sources sit behind one interface and degrade independently. The
+product works with none of them configured; it reports which were available
+and flags that the score understates when some were not.
 
-## ⏱️ Runtime Performance
+## Running it
 
-### Execution Time Breakdown
-
-| Step | Duration | Notes |
-|------|----------|-------|
-| **LLM Warmup** | 3-5 minutes | First run only (cached for 1 hour) |
-| **Market Data Agent** | 30-60 seconds | yfinance API calls (price history, valuation metrics) |
-| **Macro Trends Agent** | 60-120 seconds | FRED API calls + sector ETF data + LLM sentiment (~30-60s) |
-| **Risk Analyst Agent** | 60-120 seconds | Risk calculations + LLM risk identification (~30-60s) |
-| **Scenario Agent** | 30-120 seconds | LLM scenario generation (JSON response parsing) |
-| **Memo Writer Agent** | 60-120 seconds | LLM memo generation (longest LLM call) |
-| **Graph Orchestration** | ~5-10 seconds | LangGraph overhead, state management |
-
-### Overall Runtime
-
-- **First Run** (with LLM warmup): ~10-15 minutes
-- **Subsequent Runs** (no warmup): ~5-10 minutes
-- **Optimized Runs** (parallel data collection + cached model): ~4-8 minutes
-
-### Performance Optimizations
-
-1. **Parallel Data Collection**: Market and Macro agents run concurrently
-2. **LLM Warmup Caching**: Model kept in memory for 1 hour, avoiding reload
-3. **Shorter Prompts**: Optimized LLM prompts to reduce token count and response time
-4. **Reduced Data Periods**: Uses 6-month and 1-year periods instead of full history for faster data fetching
-5. **Efficient State Management**: TypedDict with minimal copying, direct state updates
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Python 3.10+
-- Node.js 18+ (for web application)
-- Ollama installed ([download here](https://ollama.ai))
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd analyst
-   ```
-
-2. **Set up Python environment**
-   ```bash
-   # Create virtual environment
-   python -m venv venv
-   
-   # Activate virtual environment
-   # On Windows:
-   venv\Scripts\activate
-   # On macOS/Linux:
-   source venv/bin/activate
-   ```
-
-3. **Install Ollama and pull model**
-   ```bash
-   # Install Ollama (if not already installed)
-   # Visit https://ollama.ai for installation instructions
-   
-   # Pull the model
-   ollama pull deepseek-r1:8b
-   ```
-
-4. **Install Python dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-5. **Set up environment variables**
-   
-   Create a `.env` file in the project root:
-   ```env
-   OLLAMA_BASE_URL=http://localhost:11434
-   OLLAMA_MODEL=deepseek-r1:8b
-   FRED_API_KEY=your_fred_api_key_here
-   ```
-   
-   Get your free FRED API key at: https://fred.stlouisfed.org/docs/api/api_key.html
-   
-   **Note**: The FRED API key is optional but recommended for better macroeconomic analysis. The system will work without it but macro analysis will be limited.
-
-6. **Set up Web Application (Optional)**
-   ```bash
-   # Backend (Node.js API)
-   cd backend
-   npm install
-   
-   # Frontend (React)
-   cd ../frontend
-   npm install
-   ```
-
-### Usage
-
-#### Command Line Interface
+Needs Python 3.12 and Node 20.
 
 ```bash
-python main.py <ticker> <horizon> <risk_profile>
+cd backend && uv sync
+cp ../.env.example ../.env   # SEC_EDGAR_USER_AGENT is the only required value
+uv run uvicorn vantage.api.app:app --reload
 ```
 
-**Example:**
 ```bash
-python main.py AAPL medium moderate
+cd frontend && npm ci && npm run dev
 ```
 
-**Output:**
-- Console display with recommendation, confidence score, and scenarios
-- Timing breakdown for each agent and overall execution
-- Investment memo saved to `outputs/{TICKER}_memo.md`
+Then open http://127.0.0.1:5173 and enter a ticker. `/metrics` shows the
+diff engine's scores.
 
-#### Web Application
+Only `SEC_EDGAR_USER_AGENT` is needed for the diff, novelty and peer engines.
+Without an LLM key the findings come back unexplained, and the response says
+so rather than quietly omitting it.
 
-1. **Start the backend server**
-   ```bash
-   cd backend
-   npm run dev
-   # Server runs on http://localhost:3001
-   ```
+`SEC_EDGAR_USER_AGENT` must be a real contact string, which is SEC fair-access
+policy. Everything else is optional: without `MONGODB_URI` the graph uses an
+in-memory checkpointer and says so, and without the attention keys the
+corresponding sources report themselves unavailable.
 
-2. **Start the frontend development server**
-   ```bash
-   cd frontend
-   npm run dev
-   # Application runs on http://localhost:5173
-   ```
+## Evaluation
 
-3. **Access the application**
-   - Open http://localhost:5173 in your browser
-   - Enter a stock ticker, select time horizon and risk profile
-   - Click "Run Analysis" and watch real-time progress updates
-   - View results including recommendation, scenarios, and investment memo
-
-## 🏗️ System Architecture
-
-### State Management
-
-The system uses a shared state object (`ResearchState`) that flows through the LangGraph state machine:
-
-```python
-class ResearchState(TypedDict):
-    ticker: str
-    horizon: str
-    risk_profile: str
-    
-    market_data: Dict[str, Any]      # From Market Data Agent
-    macro_data: Dict[str, Any]       # From Macro Trends Agent
-    risk_analysis: Dict[str, Any]    # From Risk Analyst Agent
-    scenarios: Dict[str, Any]        # From Scenario Agent
-    
-    recommendation: str              # From Memo Writer Agent
-    confidence_score: float          # From Memo Writer Agent
-    memo: str                        # From Memo Writer Agent
+```bash
+uv run python -m vantage.eval.run_diff_eval          # the gate, offline
+uv run pytest tests/test_trajectory.py -q            # path specs, offline
+uv run pytest tests -q                               # 255 tests, offline
+uv run pytest tests -q -m live                       # hits EDGAR and HN
 ```
 
-### Data Flow
+The gate runs on every pull request and fails the build when recall drops
+below the thresholds in `vantage/eval/thresholds.json`.
 
-1. **Input Validation**: CLI/web UI validates inputs (ticker, horizon, risk_profile)
-2. **State Initialization**: Initial state object created with empty data fields
-3. **Agent Execution**: Agents execute sequentially (with parallel data collection), each populating their designated fields
-4. **State Accumulation**: Each agent reads previous agents' outputs and adds its own analysis
-5. **Final Output**: Memo Writer agent generates final recommendation and memo using all accumulated data
+The golden set is generated, not hand-labelled. `vantage/eval/mutate.py`
+takes a real filing section, applies a known set of edits, and the resulting
+edit script is the expected output. Hand-labelling one 70,000 character Item
+1A is a day of work; this produces hundreds of cases for the cost of compute.
 
-### LLM Integration
+The honest limitation of that approach is that synthetic edits are not real
+editorial changes. It measures whether the aligner recovers a known edit
+script, which is necessary but not sufficient for the engine being useful on
+a real year-over-year comparison.
 
-- **Provider**: Ollama (local deployment)
-- **Model**: deepseek-r1:8b (8 billion parameters, reasoning-optimized)
-- **Usage Pattern**: 
-  - Each LLM call is independent (no conversation history)
-  - Prompts are carefully crafted to include all necessary context
-  - Temperature settings vary by agent (0.3-0.7) based on required creativity vs consistency
-  - Timeout: 120 seconds per LLM call (600 seconds for warmup)
+## Known limitations
 
-## 📊 Current Implementation Status
+- **Attention baselines run hot.** Real chatter is bursty, so variance
+  exceeds the Poisson assumption and z-scores from the count-only path are
+  inflated.
+- **A flat baseline cannot alert.** With zero variance the z-score is forced
+  to 0, which the logistic squash turns into attention 0.5, capping the gap
+  score below the alert threshold. Pinned by a test.
+- **Sentiment comes only from Marketaux**, and only from at most three
+  articles per response on the free tier. Finnhub's sentiment endpoint is
+  premium. Hacker News, Bluesky and Reddit contribute volume but no
+  sentiment, rather than an invented score.
+- **Moved paragraphs are the weakest change type** at 52/59, and the misses
+  land in `added`.
+- **Only 10-K to 10-K comparisons.** Comparing across forms is refused
+  outright, because item numbering differs and the diff would be noise.
+- **Reddit requires manual API approval** since self-serve registration
+  closed in late 2025, so it may be unavailable to you.
 
-### ✅ Completed Features
+## Not included
 
-- [x] Multi-agent architecture with LangGraph orchestration
-- [x] Market data agent with yfinance integration
-- [x] Macro trends agent with FRED API integration
-- [x] Risk analyst agent with quantitative metrics and LLM risk identification
-- [x] Scenario analysis agent generating Bull/Base/Bear scenarios
-- [x] Memo writer agent generating professional investment memos
-- [x] Confidence scoring algorithm
-- [x] Recommendation engine (Buy/Hold/Sell)
-- [x] CLI interface with timing breakdown
-- [x] Web application with React frontend and Express backend
-- [x] Real-time progress tracking via Server-Sent Events
-- [x] LLM warmup caching for performance optimization
-- [x] Parallel data collection for improved performance
-- [x] Error handling and graceful degradation
-- [x] Investment memo generation and file output
+There is no vector store, no embedding model and no reranker. Section
+alignment is structural, and adding semantic retrieval where exact alignment
+already works would be decoration. The one place it would genuinely earn its
+place is matching heavily reworded paragraphs that the aligner currently
+scores as a removal plus an addition.
 
-### 🔄 Known Limitations
+## License
 
-- FRED API key is optional but recommended for full macro analysis
-- pandas-ta is optional (system falls back to basic pandas calculations)
-- LLM responses may occasionally require retry logic (handled gracefully)
-- First run requires 3-5 minute warmup (subsequent runs are faster)
-- Analysis is limited to publicly traded US stocks with available data
+MIT. See [LICENSE](LICENSE).
 
-### 🚧 Potential Future Enhancements
-
-- PDF export functionality for investment memos
-- Multi-ticker comparison feature
-- Historical analysis and backtesting
-- Integration with additional data sources (news APIs, earnings data)
-- Human-in-the-loop review and override capabilities
-- Database storage for analysis history
-- User authentication and saved analysis portfolios
-- API rate limiting and request queuing
-- Docker containerization for easier deployment
-
-## ⚠️ Disclaimer
-
-This system is for **research and educational purposes only**. It does not provide financial advice. Always consult with qualified financial advisors before making investment decisions. The recommendations and analyses generated by this system should not be used as the sole basis for investment decisions.
-
-## 📝 License
-
-[Add your license here]
-
-## 🤝 Contributing
-
-[Add contribution guidelines here]
-
----
-
-**Built with**: LangGraph, LangChain, Ollama (deepseek-r1:8b), React, TypeScript, Express, and Python
+Research and educational use. Nothing here is investment advice, and the
+system deliberately expresses no opinion about any security.

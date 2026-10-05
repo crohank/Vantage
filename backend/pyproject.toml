@@ -1,0 +1,112 @@
+[project]
+name = "vantage"
+version = "0.1.0"
+description = "Surfaces what SEC filings say that the internet has not noticed"
+requires-python = ">=3.12,<3.13"
+
+dependencies = [
+    # API
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "python-multipart>=0.0.12",
+    "slowapi>=0.1.9",
+    # Orchestration
+    "langgraph>=0.2.50",
+    "langgraph-checkpoint-mongodb>=0.1",
+    # Storage
+    "pymongo[srv]>=4.10",
+    "dnspython>=2.7",
+    # Retrieval. fastembed carries onnxruntime, so both embedding and
+    # reranking run locally with no API cost.
+    "fastembed>=0.4",
+    # Documents
+    "pypdf>=5.1",
+    "beautifulsoup4>=4.12",
+    "lxml>=5.3",
+    # HTTP. httpx for async paths, requests only for the legacy sync
+    # services not yet ported.
+    "httpx>=0.28",
+    "requests>=2.32",
+    "tenacity>=9.0",
+    "feedparser>=6.0",
+    # Attention sources
+    "atproto>=0.0.55",
+    "praw>=7.8",
+    # Analysis
+    "pandas>=2.2",
+    "numpy>=2.1",
+    "yfinance>=0.2.50",
+    # Config
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+eval = [
+    "scipy>=1.14",
+    "scikit-learn>=1.5",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-recording>=0.13",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "types-pyyaml>=6.0",
+    "types-requests>=2.32",
+    "scipy>=1.14",
+    "scikit-learn>=1.5",
+    "lxml-stubs>=0.5.1",
+    "respx>=0.23.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["vantage"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "ASYNC"]
+ignore = [
+    "B008",   # FastAPI Depends() in defaults is the documented pattern
+]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+# Third-party packages without shipped stubs.
+[[tool.mypy.overrides]]
+module = [
+    "fastembed.*",
+    "feedparser.*",
+    "praw.*",
+    "atproto.*",
+    "yfinance.*",
+    "bs4.*",
+    "langgraph.*",
+    "langgraph_checkpoint_mongodb.*",
+    "slowapi.*",
+    "sklearn.*",
+    "scipy.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "live: hits a real external API. Excluded from the PR gate",
+    "eval: full LLM-as-judge suite. Nightly only",
+]
+addopts = "-m 'not live and not eval'"
