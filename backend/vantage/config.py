@@ -23,7 +23,9 @@ class Settings(BaseSettings):
     )
 
     # Storage
-    mongodb_uri: SecretStr = Field(..., alias="MONGODB_URI")
+    # Optional: the graph falls back to an in-memory checkpointer and
+    # logs that runs will not survive a restart.
+    mongodb_uri: SecretStr = Field(SecretStr(""), alias="MONGODB_URI")
     mongodb_database: str = Field("vantage", alias="MONGODB_DATABASE")
 
     # SEC requires a real contact address in the User-Agent. The old default
@@ -42,23 +44,10 @@ class Settings(BaseSettings):
     # much as quality, so the second judge is deliberately another vendor.
     cross_judge_model: str = Field("llama-3.3-70b-versatile", alias="VANTAGE_CROSS_JUDGE_MODEL")
 
-    # Retrieval. Sizes are the fastembed on-disk footprint, which matters
-    # because Render's free tier caps at 512 MB and the process also holds
-    # FastAPI, pandas and numpy.
-    #   bge-small-en-v1.5   384d  0.067 GB   (default)
-    #   bge-base-en-v1.5    768d  0.21  GB   (A/B candidate, local runs only)
-    embedding_model: str = Field("BAAI/bge-small-en-v1.5", alias="VANTAGE_EMBEDDING_MODEL")
-    embedding_dim: int = Field(384, alias="VANTAGE_EMBEDDING_DIM")
-    #   jina-reranker-v1-turbo-en  0.15 GB   (default, fits free tier)
-    #   BAAI/bge-reranker-base     1.04 GB   (does not fit free tier)
-    reranker_model: str = Field("jinaai/jina-reranker-v1-turbo-en", alias="VANTAGE_RERANKER_MODEL")
-    fastembed_cache_path: str | None = Field(None, alias="FASTEMBED_CACHE_PATH")
-
-    retrieval_candidates: int = Field(100, alias="VANTAGE_RETRIEVAL_CANDIDATES")
-    retrieval_top_k: int = Field(8, alias="VANTAGE_RETRIEVAL_TOP_K")
-    # Reciprocal rank fusion constant. 60 is the value from the original RRF
-    # paper and the usual default.
-    rrf_k: int = Field(60, alias="VANTAGE_RRF_K")
+    # On-disk cache for fetched filings. A 10-K is around 1.5 MB and the
+    # same pair is re-read across a diff, a novelty check and the eval
+    # corpus, so caching keeps the SEC rate limiter out of the way.
+    cache_path: str = Field(".cache", alias="VANTAGE_CACHE_PATH")
 
     # Attention sources. All optional: the layer degrades to whichever are
     # configured. Reddit is deliberately not load-bearing because self-serve

@@ -88,7 +88,7 @@ class EdgarClient:
             "Accept-Encoding": "gzip, deflate",
         }
         self._client: httpx.AsyncClient | None = None
-        self._cache_dir = cache_dir or (Path(settings.fastembed_cache_path or ".cache") / "edgar")
+        self._cache_dir = cache_dir or (Path(settings.cache_path) / "edgar")
         self._ticker_map: dict[str, Company] | None = None
 
     async def __aenter__(self) -> EdgarClient:
