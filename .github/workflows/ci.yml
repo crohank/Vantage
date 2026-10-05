@@ -9,6 +9,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Settings validates this at import, so every job that touches the
+  # package needs one. The placeholder is only ever used by jobs that
+  # make no SEC request; the corpus download below requires the secret.
+  SEC_EDGAR_USER_AGENT: ${{ secrets.SEC_EDGAR_USER_AGENT || 'Vantage CI vantage-ci@crohank.dev' }}
+
 defaults:
   run:
     working-directory: backend
@@ -82,10 +88,17 @@ jobs:
       - name: Download corpus on cache miss
         if: steps.corpus.outputs.cache-hit != 'true'
         env:
-          # SEC requires a real contact address and rejects noreply domains.
           SEC_EDGAR_USER_AGENT: ${{ secrets.SEC_EDGAR_USER_AGENT }}
           MONGODB_URI: mongodb://unused/vantage
-        run: uv run python -m vantage.eval.run_diff_eval --refresh
+        run: |
+          # SEC fair access requires a reachable contact address, so refuse
+          # to download rather than falling back to the placeholder.
+          if [ -z "$SEC_EDGAR_USER_AGENT" ]; then
+            echo "The corpus cache missed and SEC_EDGAR_USER_AGENT is not set."
+            echo "Add it as a repository secret: '<name> <your email>'."
+            exit 1
+          fi
+          uv run python -m vantage.eval.run_diff_eval --refresh
 
       - name: Run gate
         env:
